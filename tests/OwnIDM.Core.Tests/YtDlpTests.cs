@@ -112,6 +112,23 @@ public class YtDlpToolTests
     }
 
     [Fact]
+    public void Plain_files_split_in_byte_ranges_rank_as_plain_files()
+    {
+        // With formats=dashy YouTube's files come as DASH with an exact size; an HLS copy only estimates it.
+        const string info = """
+            {"title": "t", "formats": [
+              {"format_id": "140", "vcodec": "none", "acodec": "mp4a.40.2", "protocol": "http_dash_segments", "filesize": 1000},
+              {"format_id": "hls-1080", "vcodec": "avc1.640028", "acodec": "none", "height": 1080, "protocol": "m3u8_native",
+               "filesize_approx": 9000, "tbr": 5000},
+              {"format_id": "299", "vcodec": "avc1.64002A", "acodec": "none", "height": 1080, "protocol": "http_dash_segments",
+               "filesize": 8000, "tbr": 3000}
+            ]}
+            """;
+        var hd = YtDlpTool.ParseInfo(info, hasFfmpeg: true).Qualities[0];
+        Assert.Equal(("299+140", 9000L, true), (hd.Formats, hd.Size, hd.SizeExact));
+    }
+
+    [Fact]
     public void Pages_without_format_list_get_a_single_best_choice_and_playlists_are_refused()
     {
         var probe = YtDlpTool.ParseInfo("""{"title": "clip", "is_live": true}""", hasFfmpeg: true);
@@ -148,6 +165,12 @@ public class YtDlpToolTests
         // Once finished, what arrived is the size.
         Assert.True(YtDlpTool.TryParseProgress("OWNIDM-PROGRESS finished 99000 NA 100000.5 hls-720", out p));
         Assert.Equal(99000, p.Total);
+
+        // A file split in fragments says how many: that many can be fetched at once.
+        Assert.True(YtDlpTool.TryParseProgress("OWNIDM-PROGRESS downloading 1024 NA 268000000.5 299 26", out p));
+        Assert.Equal(("299", 26), (p.FormatId, p.Fragments));
+        Assert.True(YtDlpTool.TryParseProgress("OWNIDM-PROGRESS downloading 3072 4323893 NA 160 NA", out p));
+        Assert.Equal(new YtDlpProgress("160", false, 3072, 4323893), p);
 
         Assert.False(YtDlpTool.TryParseProgress("[download] Destination: video.f160.mp4", out _));
         Assert.False(YtDlpTool.TryParseProgress("OWNIDM-PROGRESS downloading NA NA NA 1", out _));

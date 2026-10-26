@@ -23,8 +23,10 @@ public sealed record YtDlpProbe(string Title, string Site, double Duration, bool
 /// <summary>
 /// yt-dlp progress for one of the files it downloads (video, audio): <paramref name="Total"/> is its
 /// exact size, <paramref name="Estimate"/> the guess yt-dlp revises as fragments arrive.
+/// <paramref name="Fragments"/> is how many pieces a fragmented file comes in (null for a plain file).
 /// </summary>
-public readonly record struct YtDlpProgress(string FormatId, bool Finished, long Downloaded, long? Total, long? Estimate = null);
+public readonly record struct YtDlpProgress(string FormatId, bool Finished, long Downloaded, long? Total, long? Estimate = null,
+    int? Fragments = null);
 
 /// <summary>A file yt-dlp is about to download and its size, exact or estimated.</summary>
 public readonly record struct YtDlpPart(string FormatId, long? Size, bool Exact);
@@ -121,16 +123,19 @@ public static class YtDlpTool
                 // "none" means absent; a missing codec (storyboards, unknown formats) says nothing.
                 var v = Str(f, "vcodec");
                 var a = Str(f, "acodec");
+                var protocol = Str(f, "protocol");
+                long? exact = (long?)Num(f, "filesize");
                 bool video = v is not null && v != "none";
                 bool audio = a is not null && a != "none";
                 if ((!video && !audio) || Str(f, "format_id") is not { Length: > 0 } id)
                     continue;
                 formats.Add(new Fmt(id, (int)(Num(f, "height") ?? 0), video, audio,
-                    (long?)Num(f, "filesize"), (long?)Num(f, "filesize_approx"),
+                    exact, (long?)Num(f, "filesize_approx"),
                     H264: v?.StartsWith("avc", StringComparison.Ordinal) == true || v?.StartsWith("h264", StringComparison.Ordinal) == true,
                     Aac: a?.StartsWith("mp4a", StringComparison.Ordinal) == true || a?.StartsWith("aac", StringComparison.Ordinal) == true,
                     // Plain files have an exact size and resume by byte range; HLS/DASH only estimate it.
-                    Https: Str(f, "protocol") is null or "https" or "http",
+                    // A plain file split in byte ranges (YouTube's "dashy") is DASH with an exact size.
+                    Https: protocol is null or "https" or "http" || (protocol == "http_dash_segments" && exact > 0),
                     Preference: Num(f, "preference") ?? 0, Language: Num(f, "language_preference") ?? 0,
                     Quality: Num(f, "quality") ?? 0, Fps: Num(f, "fps") ?? 0, Tbr: Num(f, "tbr") ?? 0));
             }
@@ -186,7 +191,8 @@ public static class YtDlpTool
     [
         "--newline", "--progress", "--no-simulate",
         "--progress-template", "download:" + ProgressPrefix +
-            "%(progress.status)s %(progress.downloaded_bytes)s %(progress.total_bytes)s %(progress.total_bytes_estimate)s %(info.format_id)s",
+            "%(progress.status)s %(progress.downloaded_bytes)s %(progress.total_bytes)s %(progress.total_bytes_estimate)s %(info.format_id)s " +
+            "%(progress.fragment_count)s",
         // The chosen format, or each file of a video+audio pair (yt-dlp sums a pair's sizes as an estimate).
         "--print", "before_dl:" + SizePrefix +
             "%(format_id)s %(filesize)s %(filesize_approx)s " +
@@ -200,7 +206,7 @@ public static class YtDlpTool
         progress = default;
         if (!line.StartsWith(ProgressPrefix, StringComparison.Ordinal))
             return false;
-        var p = line[ProgressPrefix.Length..].Split(' ', 5);
+        var p = line[ProgressPrefix.Length..].Trim().Split(' ');
         if (p.Length < 5)
             return false;
         bool finished = p[0] == "finished";
@@ -211,7 +217,8 @@ public static class YtDlpTool
         if (done is null)
             return false;
         // Once finished, what arrived is the size.
-        progress = new YtDlpProgress(p[4].Trim(), finished, done.Value, finished ? done : total, estimate);
+        int? fragments = p.Length > 5 && Long(p[5]) is { } n ? (int)Math.Min(n, int.MaxValue) : null;
+        progress = new YtDlpProgress(p[4], finished, done.Value, finished ? done : total, estimate, fragments);
         return true;
     }
 
@@ -387,6 +394,8 @@ public sealed class YtDlpDownloader
             var ffmpeg = Ffmpeg.Find(_settings);
             Directory.CreateDirectory(dir);
             cookieFile = WriteCookies(Path.Combine(dir, "cookies.txt"), item.Url, item.Cookies);
+            // yt-dlp fetches that many fragments at once; a plain file always comes over one connection.
+            int connections = Math.Clamp(_settings.MaxConnectionsPerDownload, 1, 8);
 
             List<string> Args(bool fromInfo)
             {
@@ -394,7 +403,7 @@ public sealed class YtDlpDownloader
                 args.AddRange(YtDlpTool.FormatArgs(item.YtDlpQuality, ffmpeg is not null, item.YtDlpFormat));
                 if (ffmpeg is not null)
                     args.AddRange(["--ffmpeg-location", ffmpeg]);
-                args.AddRange(["-N", Math.Clamp(_settings.MaxConnectionsPerDownload, 1, 8).ToString(CultureInfo.InvariantCulture)]);
+                args.AddRange(["-N", connections.ToString(CultureInfo.InvariantCulture)]);
                 if (_settings.EffectiveSpeedLimit > 0)
                     args.AddRange(["--limit-rate", _settings.EffectiveSpeedLimit.ToString(CultureInfo.InvariantCulture)]);
                 args.AddRange(["--retries", _settings.MaxRetries.ToString(CultureInfo.InvariantCulture)]);
@@ -425,7 +434,7 @@ public sealed class YtDlpDownloader
                 if (YtDlpTool.TryParseProgress(line, out var p))
                 {
                     item.Status = DownloadStatus.Downloading;
-                    item.ActiveConnections = 1;
+                    item.ActiveConnections = p.Fragments is { } fragments ? Math.Clamp(fragments, 1, connections) : 1;
                     parts[p.FormatId] = p;
                     Refresh();
                 }
@@ -511,6 +520,10 @@ public sealed class YtDlpDownloader
         yield return Math.Max(5, _settings.TimeoutSeconds).ToString(CultureInfo.InvariantCulture);
         foreach (var arg in YtDlpTool.JsRuntimeArgs(_settings))
             yield return arg;
+        // YouTube's files would come over a single connection; split in 10 MiB byte ranges, -N fetches
+        // several at once.
+        yield return "--extractor-args";
+        yield return "youtube:formats=dashy";
         if (!string.IsNullOrWhiteSpace(userAgent))
         {
             yield return "--user-agent";
