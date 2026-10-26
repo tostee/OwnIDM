@@ -1,0 +1,31 @@
+﻿OwnIDM: privacidad y cambios en el sistema
+==========================================
+
+OwnIDM no recoge datos personales, no tiene telemetría ni publicidad y no envía información a
+ningún servidor propio. Solo se conecta a internet para lo siguiente:
+
+* Las descargas que tú añades, con las cookies que te dé el navegador para ese mismo sitio.
+
+* GitHub (github.com), una vez al día al iniciarse, para comprobar si hay una versión nueva de
+  OwnIDM y de yt-dlp (si lo instaló OwnIDM). Solo se descarga un archivo público; no se envía
+  nada tuyo. Se desactiva en Opciones -> General.
+
+* GitHub, cuando aceptas instalar yt-dlp, ffmpeg o Deno (componentes para vídeo), para
+  descargarlos de sus páginas oficiales.
+
+* Torrents: cuando descargas un torrent, OwnIDM se conecta a otros usuarios (pares, DHT,
+  trackers), que ven tu dirección IP como en cualquier cliente de torrents. Puede abrir un
+  puerto en el router con UPnP/NAT-PMP; se desactiva en Opciones -> Torrent.
+
+Cambios en el sistema (todos para tu usuario, sin permisos de administrador):
+
+* Registra el host de la extensión del navegador (Chrome, Edge, Brave, Vivaldi, Chromium) en
+  HKCU\Software\<navegador>\NativeMessagingHosts. Se desactiva en Opciones -> Navegador.
+
+* Solo si lo activas en Opciones: inicio con Windows y abrir los archivos .torrent y los enlaces
+  magnet con OwnIDM.
+
+Al desinstalar se quita todo lo anterior. Se conservan tu lista de descargas y tus ajustes
+(%APPDATA%\OwnIDM).
+
+OwnIDM es software libre (licencia MIT): https://github.com/tostee/OwnIDM

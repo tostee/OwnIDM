@@ -1,0 +1,49 @@
+{
+  "manifest_version": 3,
+  "name": "OwnIDM - Integración",
+  "description": "Envía las descargas y los vídeos de las páginas a OwnIDM (descarga multi-conexión).",
+  "version": "1.4.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuhvchsnoxn8MlnZKbAqLS3M36QwnUB7tVhFa+UEBxZlzQDqgX/zAXELk+Aw9n1UHl2CyY6lF+JIgWwvntZsLa2E6BF0gWsbaiRm99To5lEzl4XmRyvY2d4+JhbgTMUv7DStv8ji+HGvA+2EkS74GhpOvV6Rb6Yn0XT4keDP42HV62SST7WJCo5a0kBhcdWGvep0fUJiuuQwFIR4N21CfdFXR/vMaxTO3114pah1pUIOnhKGbrotFEabAI9VgaD5iiHyPrkW3dn+ms5kQYoFInFNSuA8w+4Vj7x64apVyXgvGmJ2pKauQPzzxgIcgz6N4SNLq+zmksbE8wE56Ofno8wIDAQAB",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    },
+    "default_title": "OwnIDM",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "downloads",
+    "cookies",
+    "contextMenus",
+    "nativeMessaging",
+    "storage",
+    "webRequest",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "minimum_chrome_version": "109",
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "panel.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

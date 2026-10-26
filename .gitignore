@@ -1,0 +1,13 @@
+bin/
+obj/
+build/
+.vs/
+*.user
+TestResults/
+dist/
+.omc/
+
+# Local only: reverse-engineering notes and screenshots.
+docs/ANALISIS-*.md
+/*.jpg
+bugs/
