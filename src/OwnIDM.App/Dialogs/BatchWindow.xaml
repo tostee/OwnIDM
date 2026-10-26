@@ -1,0 +1,38 @@
+<Window x:Class="OwnIDM.App.BatchWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Descarga por lotes" Style="{StaticResource DialogWindow}" WindowStartupLocation="CenterOwner">
+    <StackPanel Margin="18" Width="560">
+        <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
+                   Text="Añade una serie de archivos con nombres secuenciales (img001.jpg, img002.jpg… img100.jpg). Usa un asterisco (*) donde va el número o la letra. Ejemplo: https://ejemplo.com/fotos/img*.jpg" />
+        <TextBlock Text="Dirección" Style="{StaticResource FieldLabel}" Margin="0,14,0,4" />
+        <TextBox x:Name="PatternBox" Height="28" TextChanged="OnChanged" />
+
+        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+            <TextBlock Text="Sustituir * por" Style="{StaticResource FieldLabel}" />
+            <RadioButton x:Name="NumbersRadio" Content="Números" IsChecked="True" Margin="0,0,16,0" VerticalAlignment="Center" Checked="OnChanged" />
+            <RadioButton x:Name="LettersRadio" Content="Letras" VerticalAlignment="Center" Checked="OnChanged" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+            <TextBlock Text="Desde" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="FromBox" Width="70" Text="1" TextChanged="OnChanged" />
+            <TextBlock Text="Hasta" Style="{StaticResource FieldLabel}" Margin="18,0,12,0" />
+            <TextBox x:Name="ToBox" Width="70" Text="10" TextChanged="OnChanged" />
+            <TextBlock Text="Ancho (ceros)" Style="{StaticResource FieldLabel}" Margin="18,0,12,0" />
+            <TextBox x:Name="WidthBox" Width="50" Text="1" TextChanged="OnChanged" />
+        </StackPanel>
+
+        <Border Margin="0,14,0,0" Padding="10,8" Background="{StaticResource PanelBrush}" CornerRadius="4">
+            <TextBlock x:Name="PreviewText" TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" />
+        </Border>
+
+        <DockPanel Margin="0,18,0,0">
+            <CheckBox x:Name="StartQueueBox" Content="Iniciar la cola al aceptar" IsChecked="True" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="OkButton" Content="Añadir a la cola" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
+                <Button Content="Cancelar" Style="{StaticResource DialogButton}" IsCancel="True" />
+            </StackPanel>
+        </DockPanel>
+    </StackPanel>
+</Window>

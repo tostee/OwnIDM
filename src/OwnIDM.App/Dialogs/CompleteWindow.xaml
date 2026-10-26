@@ -1,0 +1,27 @@
+<Window x:Class="OwnIDM.App.CompleteWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Descarga completada" Style="{StaticResource DialogWindow}" Icon="/Assets/ownidm.ico"
+        ShowInTaskbar="True" Topmost="True" WindowStartupLocation="CenterScreen">
+    <StackPanel Margin="18" Width="480">
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="&#xE930;" FontFamily="{StaticResource IconFont}" FontSize="28" Foreground="#1E9E5A" VerticalAlignment="Center" />
+            <StackPanel Margin="12,0,0,0">
+                <TextBlock Text="Descarga completada" FontSize="16" FontWeight="SemiBold" />
+                <TextBlock x:Name="SizeText" Foreground="{StaticResource MutedTextBrush}" />
+            </StackPanel>
+        </StackPanel>
+        <TextBlock Text="Guardado como" Style="{StaticResource FieldLabel}" Margin="0,16,0,4" />
+        <TextBox x:Name="PathText" IsReadOnly="True" Height="28" Background="{StaticResource PanelBrush}" />
+        <TextBlock Text="Dirección" Style="{StaticResource FieldLabel}" Margin="0,10,0,4" />
+        <TextBox x:Name="UrlText" IsReadOnly="True" Height="28" Background="{StaticResource PanelBrush}" />
+        <DockPanel Margin="0,18,0,0">
+            <CheckBox x:Name="DontShow" Content="No volver a mostrar" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Abrir" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOpen" />
+                <Button Content="Abrir carpeta" Style="{StaticResource DialogButton}" Click="OnOpenFolder" />
+                <Button Content="Cerrar" Style="{StaticResource DialogButton}" IsCancel="True" Click="OnClose" />
+            </StackPanel>
+        </DockPanel>
+    </StackPanel>
+</Window>

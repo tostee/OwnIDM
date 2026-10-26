@@ -1,0 +1,127 @@
+# Publishes a version when a tag v<version> is pushed (installer/publish-release.ps1 does it):
+# tests, build, SignPath signs OwnIDM's binaries, Inno Setup packs them, SignPath signs the installer,
+# and the GitHub release gets the installer plus latest.json, the feed OwnIDM updates from.
+#
+# Signing needs the secret SIGNPATH_API_TOKEN and the variable SIGNPATH_ORGANIZATION_ID; without
+# them the release is published unsigned. The SignPath project is "OwnIDM", its signing policy
+# "release-signing" and its artifact configurations those in .signpath/artifact-configurations.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write  # create the release
+  actions: read    # SignPath downloads the uploaded artifacts
+
+jobs:
+  release:
+    # SignPath Foundation only signs what GitHub-hosted runners built.
+    runs-on: windows-latest
+    env:
+      SIGN: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Version and notes from the tag
+        id: meta
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $props = [xml](Get-Content Directory.Build.props)
+          $version = @($props.Project.PropertyGroup | ForEach-Object { $_.Version } | Where-Object { $_ })[0]
+          if ("v$version" -ne $tag) { throw "La etiqueta $tag no coincide con <Version>$version</Version> de Directory.Build.props." }
+          # checkout leaves an annotated tag without its message: fetch the tag object itself.
+          git fetch --force origin "refs/tags/${tag}:refs/tags/${tag}"
+          $notes = (git tag -l --format='%(contents)' $tag | Out-String).Trim()
+          if (-not $notes) { $notes = "OwnIDM $version" }
+          [IO.File]::WriteAllText("$env:RUNNER_TEMP\notes.txt", $notes)
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Tests
+        run: dotnet test tests/OwnIDM.Core.Tests -c Release
+
+      - name: Build
+        run: ./installer/build-installer.ps1 -Version ${{ steps.meta.outputs.version }} -BuildOnly
+
+      - name: Upload unsigned binaries
+        id: unsigned-binaries
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: binaries-unsigned
+          path: build/Release/
+
+      - name: Sign binaries (SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: OwnIDM
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: binaries
+          github-artifact-id: ${{ steps.unsigned-binaries.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.meta.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 3600  # each request is approved by hand
+          output-artifact-directory: ${{ runner.temp }}/signed-binaries
+
+      - name: Use the signed binaries
+        if: env.SIGN == 'true'
+        run: |
+          Copy-Item "$env:RUNNER_TEMP\signed-binaries\*" build/Release -Recurse -Force
+          $bad = Get-ChildItem build/Release/OwnIDM*.exe, build/Release/OwnIDM*.dll |
+              Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid' }
+          if ($bad) { throw "Sin firma válida: $($bad.Name -join ', ')" }
+
+      - name: Inno Setup
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Installer
+        run: ./installer/build-installer.ps1 -Version ${{ steps.meta.outputs.version }} -SkipBuild
+
+      - name: Upload unsigned installer
+        id: unsigned-installer
+        if: env.SIGN == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-unsigned
+          path: dist/OwnIDM-Setup-${{ steps.meta.outputs.version }}.exe
+
+      - name: Sign installer (SignPath)
+        if: env.SIGN == 'true'
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: OwnIDM
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          parameters: |
+            version: "${{ steps.meta.outputs.version }}"
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: ${{ runner.temp }}/signed-installer
+
+      - name: Use the signed installer
+        if: env.SIGN == 'true'
+        run: |
+          $setup = "dist/OwnIDM-Setup-${{ steps.meta.outputs.version }}.exe"
+          Copy-Item "$env:RUNNER_TEMP\signed-installer\OwnIDM-Setup-*.exe" $setup -Force
+          if ((Get-AuthenticodeSignature $setup).Status -ne 'Valid') { throw 'El instalador no tiene una firma válida.' }
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $setup = "dist/OwnIDM-Setup-$version.exe"
+          # After signing: the feed carries the SHA-256 of the final installer.
+          ./installer/write-feed.ps1 -Setup $setup -Version $version -Notes (Get-Content "$env:RUNNER_TEMP\notes.txt" -Raw)
+          gh release create '${{ github.ref_name }}' $setup dist/latest.json --title "OwnIDM $version" --notes-file "$env:RUNNER_TEMP\notes.txt" --latest

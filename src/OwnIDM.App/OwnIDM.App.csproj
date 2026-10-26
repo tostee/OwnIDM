@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- Only for the tray NotifyIcon; keep WinForms names out of the global usings. -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Assets\ownidm.ico</ApplicationIcon>
+    <AssemblyName>OwnIDM</AssemblyName>
+    <RootNamespace>OwnIDM.App</RootNamespace>
+    <AssemblyTitle>OwnIDM - Gestor de descargas</AssemblyTitle>
+    <!-- Shared with OwnIDM.NativeHost so the browser host can find OwnIDM.exe next to it. -->
+    <OutDir>$(MSBuildThisFileDirectory)..\..\build\$(Configuration)\</OutDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="UpdateFeed" Value="$(UpdateFeed)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\ownidm.ico" />
+    <None Include="..\..\extension\**\*" Link="extension\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OwnIDM.Core\OwnIDM.Core.csproj" />
+    <ProjectReference Include="..\OwnIDM.NativeHost\OwnIDM.NativeHost.csproj" />
+  </ItemGroup>
+
+</Project>

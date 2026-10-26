@@ -1,0 +1,110 @@
+﻿<Application x:Class="OwnIDM.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:OwnIDM.App"
+             ShutdownMode="OnExplicitShutdown">
+    <Application.Resources>
+        <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+        <SolidColorBrush x:Key="AccentBrush" Color="#1F6FD8" />
+        <SolidColorBrush x:Key="AccentLightBrush" Color="#E5F0FD" />
+        <SolidColorBrush x:Key="BorderBrush" Color="#D9DEE5" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#F5F7FA" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#5F6B7A" />
+        <SolidColorBrush x:Key="ActiveSegmentBrush" Color="#1F6FD8" />
+        <SolidColorBrush x:Key="DoneSegmentBrush" Color="#6FA8F0" />
+
+        <local:BytesConverter x:Key="Bytes" />
+        <local:SpeedConverter x:Key="Speed" />
+        <local:DurationConverter x:Key="Duration" />
+        <local:StatusTextConverter x:Key="StatusText" />
+        <local:CategoryGlyphConverter x:Key="CategoryGlyph" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+
+        <Style TargetType="Window" x:Key="DialogWindow">
+            <Setter Property="Background" Value="White" />
+            <Setter Property="FontFamily" Value="Segoe UI" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="ResizeMode" Value="NoResize" />
+            <Setter Property="SizeToContent" Value="WidthAndHeight" />
+            <Setter Property="ShowInTaskbar" Value="False" />
+        </Style>
+
+        <!-- Large toolbar button: glyph above a label, like a classic download manager. -->
+        <Style x:Key="ToolButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="MinWidth" Value="74" />
+            <Setter Property="Foreground" Value="#1D2633" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <StackPanel>
+                                <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource IconFont}" FontSize="22"
+                                           HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}" />
+                                <ContentPresenter HorizontalAlignment="Center" Margin="0,4,0,0" TextElement.FontSize="12" />
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentLightBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#CFE2FB" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="16,6" />
+            <Setter Property="MinWidth" Value="96" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#185DB8" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="Button" x:Key="DialogButton">
+            <Setter Property="Padding" Value="14,5" />
+            <Setter Property="MinWidth" Value="90" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,12,0" />
+        </Style>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,22 @@
+<Project>
+  <!--
+    Shared by every project. The version lives only here: installer\build-installer.ps1 reads it,
+    the installer and latest.json carry it, and the updater compares it with the published one.
+    The version resource (company, description, copyright) also matters to antivirus heuristics:
+    executables without one look more suspicious.
+  -->
+  <PropertyGroup>
+    <Version>1.0.4</Version>
+    <Product>OwnIDM</Product>
+    <Company>OwnIDM</Company>
+    <Authors>OwnIDM</Authors>
+    <Copyright>© 2026 Renier (tostee)</Copyright>
+    <!-- A plain product version (no "+commit"): SignPath checks it is the same in every signed file. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <NeutralLanguage>es-ES</NeutralLanguage>
+    <!-- Where OwnIDM looks for new versions: the latest.json that build-installer.ps1 writes to dist\.
+         The release workflow (.github/workflows/release.yml) publishes it with each GitHub release.
+         Empty = updates disabled. -->
+    <UpdateFeed>https://github.com/tostee/OwnIDM/releases/latest/download/latest.json</UpdateFeed>
+  </PropertyGroup>
+</Project>

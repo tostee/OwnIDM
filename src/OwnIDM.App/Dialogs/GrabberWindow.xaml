@@ -1,0 +1,111 @@
+<Window x:Class="OwnIDM.App.GrabberWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Grabber de sitios" Icon="/Assets/ownidm.ico" Width="1000" Height="720" MinWidth="820" MinHeight="560"
+        FontFamily="Segoe UI" FontSize="13" Background="White" WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Margin" Value="0,0,10,0" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+        </Style>
+    </Window.Resources>
+    <DockPanel Margin="14">
+        <!-- Start address -->
+        <DockPanel DockPanel.Dock="Top">
+            <TextBlock Text="Dirección inicial" Style="{StaticResource FieldLabel}" />
+            <Button x:Name="StopButton" DockPanel.Dock="Right" Content="Detener" Style="{StaticResource DialogButton}" IsEnabled="False" Click="OnStop" />
+            <Button x:Name="ExploreButton" DockPanel.Dock="Right" Content="Explorar" Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" IsDefault="True" Click="OnExplore" />
+            <TextBox x:Name="StartUrlBox" Height="30" />
+        </DockPanel>
+
+        <!-- Options -->
+        <Grid DockPanel.Dock="Top" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <GroupBox Header="Páginas a explorar">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="Niveles de enlaces en el sitio" Style="{StaticResource FieldLabel}" Width="180" />
+                        <TextBox x:Name="DepthBox" Width="44" Height="24" ToolTip="0 = solo la página inicial" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="Niveles en otros sitios" Style="{StaticResource FieldLabel}" Width="180" />
+                        <TextBox x:Name="ExternalDepthBox" Width="44" Height="24" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="Páginas como máximo" Style="{StaticResource FieldLabel}" Width="180" />
+                        <TextBox x:Name="MaxPagesBox" Width="60" Height="24" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="Exploraciones a la vez (1-10)" Style="{StaticResource FieldLabel}" Width="180" />
+                        <TextBox x:Name="ParallelBox" Width="44" Height="24" />
+                    </StackPanel>
+                    <CheckBox x:Name="StayBelowBox" Content="No subir a carpetas superiores" Margin="0,6,0,0" />
+                    <CheckBox x:Name="RobotsBox" Content="Respetar robots.txt" Margin="0,4,0,0" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Grid.Column="1" Header="Archivos a buscar">
+                <StackPanel>
+                    <ComboBox x:Name="PresetBox" Height="26" SelectionChanged="OnPresetChanged" />
+                    <TextBlock Text="Máscaras (extensiones o comodines)" Style="{StaticResource FieldLabel}" Margin="0,8,0,4" />
+                    <TextBox x:Name="MasksBox" Height="26" ToolTip="Ejemplos: zip rar  ·  *.pdf  ·  img??.jpg  ·  * (cualquier archivo)" />
+                    <CheckBox x:Name="SameSiteFilesBox" Content="Solo archivos de este sitio" Margin="0,8,0,0" />
+                    <CheckBox x:Name="HideDuplicatesBox" Content="Ocultar duplicados (mismo nombre y tamaño)" Margin="0,4,0,0" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox Grid.Column="2" Header="Guardar en" Margin="0">
+                <StackPanel>
+                    <RadioButton x:Name="ByCategoryRadio" Content="Carpeta de la categoría de cada archivo" />
+                    <RadioButton x:Name="ToFolderRadio" Content="Esta carpeta:" Margin="0,6,0,0" />
+                    <DockPanel Margin="20,4,0,0">
+                        <Button DockPanel.Dock="Right" Content="…" Width="30" Margin="4,0,0,0" Click="OnBrowseFolder" />
+                        <TextBox x:Name="FolderBox" Height="24" />
+                    </DockPanel>
+                    <CheckBox x:Name="SubfoldersBox" Content="Mantener las subcarpetas del sitio" Margin="0,8,0,0" />
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Bottom actions -->
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Marcar todo" Padding="12,4" Click="OnCheckAll" />
+                <Button Content="Desmarcar todo" Padding="12,4" Margin="8,0,0,0" Click="OnUncheckAll" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <CheckBox x:Name="StartQueueBox" Content="Iniciar la cola" IsChecked="True" VerticalAlignment="Center" Margin="0,0,12,0" />
+                <Button x:Name="AddButton" Content="Añadir marcados a OwnIDM" Style="{StaticResource PrimaryButton}" IsEnabled="False" Click="OnAdd" />
+                <Button Content="Cerrar" Style="{StaticResource DialogButton}" IsCancel="True" Click="OnClose" />
+            </StackPanel>
+        </DockPanel>
+
+        <!-- Status -->
+        <Border DockPanel.Dock="Top" Margin="0,12,0,8" Padding="10,6" Background="{StaticResource PanelBrush}" CornerRadius="4">
+            <DockPanel>
+                <TextBlock x:Name="StatsText" DockPanel.Dock="Left" FontWeight="SemiBold" />
+                <TextBlock x:Name="CurrentText" Margin="16,0,0,0" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+            </DockPanel>
+        </Border>
+
+        <!-- Results -->
+        <DataGrid x:Name="ResultsGrid" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column"
+                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EEF1F5" BorderBrush="{StaticResource BorderBrush}"
+                  RowHeight="26" SelectionMode="Extended">
+            <DataGrid.Columns>
+                <DataGridCheckBoxColumn Header="" Binding="{Binding Checked, UpdateSourceTrigger=PropertyChanged}" Width="34" />
+                <DataGridTextColumn Header="Archivo" Binding="{Binding FileName}" Width="2*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Tamaño" Binding="{Binding Size, Converter={StaticResource Bytes}}" Width="90" IsReadOnly="True" SortMemberPath="Size" />
+                <DataGridTextColumn Header="Tipo" Binding="{Binding ContentType}" Width="140" IsReadOnly="True" />
+                <DataGridTextColumn Header="Dirección" Binding="{Binding Url}" Width="3*" IsReadOnly="True" />
+                <DataGridTextColumn Header="Página" Binding="{Binding PageUrl}" Width="2*" IsReadOnly="True" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </DockPanel>
+</Window>
