@@ -6,6 +6,7 @@ using OwnIDM.Core.Ipc;
 using OwnIDM.Core.Manager;
 using OwnIDM.Core.Torrents;
 using OwnIDM.Core.Update;
+using Wpf.Ui.Appearance;
 
 namespace OwnIDM.App;
 
@@ -69,7 +70,13 @@ public partial class App : Application
         if (Manager.Settings.BrowserIntegration)
             BrowserIntegration.TryRegister(out _);
 
+        // Light or dark like Windows, always with OwnIDM's blue as the accent (not the Windows accent color).
+        ApplicationThemeManager.Changed += (theme, _) => ApplyAccent(theme);
+        ApplicationThemeManager.ApplySystemTheme();
+        ApplyAccent(ApplicationThemeManager.GetAppTheme());
+
         var window = new MainWindow();
+        SystemThemeWatcher.Watch(window, Wpf.Ui.Controls.WindowBackdropType.Mica, updateAccents: false);
         MainWindow = window;
         if (!startHidden)
             window.Show();
@@ -83,6 +90,9 @@ public partial class App : Application
         if (url is not null)
             _ = window.HandleIpc(new IpcMessage { Url = url });
     }
+
+    private static void ApplyAccent(ApplicationTheme theme) =>
+        ApplicationAccentColorManager.Apply(System.Windows.Media.Color.FromRgb(0x1F, 0x6F, 0xD8), theme);
 
     private static void LogError(Exception ex)
     {

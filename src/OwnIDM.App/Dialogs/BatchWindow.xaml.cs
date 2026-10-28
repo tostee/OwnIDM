@@ -3,7 +3,7 @@ using OwnIDM.Core.Util;
 
 namespace OwnIDM.App;
 
-public partial class BatchWindow : Window
+public partial class BatchWindow : Wpf.Ui.Controls.FluentWindow
 {
     public BatchWindow()
     {
@@ -27,14 +27,14 @@ public partial class BatchWindow : Window
             PreviewText.Text = Urls.Count <= 3
                 ? string.Join("\n", Urls)
                 : $"{Urls[0]}\n{Urls[1]}\n…\n{Urls[^1]}\n\nTotal: {Urls.Count} archivos";
-            PreviewText.Foreground = System.Windows.Media.Brushes.Black;
+            PreviewText.SetResourceReference(ForegroundProperty, "TextFillColorPrimaryBrush");
             OkButton.IsEnabled = true;
         }
         catch (FormatException ex)
         {
             Urls = [];
             PreviewText.Text = ex.Message;
-            PreviewText.Foreground = System.Windows.Media.Brushes.Firebrick;
+            PreviewText.SetResourceReference(ForegroundProperty, "SystemFillColorCriticalBrush");
             OkButton.IsEnabled = false;
         }
     }

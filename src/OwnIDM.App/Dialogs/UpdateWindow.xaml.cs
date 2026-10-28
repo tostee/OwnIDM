@@ -6,7 +6,7 @@ using OwnIDM.Core.Util;
 namespace OwnIDM.App;
 
 /// <summary>Offers a new version; on "Actualizar ahora" downloads and verifies its installer.</summary>
-public partial class UpdateWindow : Window
+public partial class UpdateWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly AppRelease _release;
@@ -74,7 +74,7 @@ public partial class UpdateWindow : Window
             _downloading = false;
             Bar.Visibility = Visibility.Collapsed;
             StatusText.Text = "Error: " + ex.Message;
-            StatusText.Foreground = System.Windows.Media.Brushes.Firebrick;
+            StatusText.SetResourceReference(ForegroundProperty, "SystemFillColorCriticalBrush");
             UpdateButton.Content = "Reintentar";
             UpdateButton.IsEnabled = SkipButton.IsEnabled = true;
             LaterButton.Content = "Más tarde";

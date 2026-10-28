@@ -1,9 +1,81 @@
-<Window x:Class="OwnIDM.App.MainWindow"
+<ui:FluentWindow x:Class="OwnIDM.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="OwnIDM" Height="620" Width="1080" MinWidth="720" MinHeight="400"
-        Icon="Assets/ownidm.ico" FontFamily="Segoe UI" FontSize="13" Background="White"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="OwnIDM" Height="640" Width="1200" MinWidth="720" MinHeight="400"
+        Icon="Assets/ownidm.ico" FontFamily="Segoe UI" FontSize="13"
+        ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica" WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen" AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver">
+    <Window.Resources>
+        <!-- Large toolbar button: glyph above a label, like a classic download manager.
+             The glyph takes its color from BorderBrush (the border itself is not drawn). -->
+        <Style x:Key="ToolButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Margin" Value="1,0" />
+            <Setter Property="MinWidth" Value="72" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6" />
+                            <Border x:Name="Overlay" CornerRadius="6" />
+                            <StackPanel Margin="{TemplateBinding Padding}">
+                                <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource IconFont}" FontSize="20"
+                                           HorizontalAlignment="Center" Foreground="{TemplateBinding BorderBrush}" />
+                                <ContentPresenter HorizontalAlignment="Center" Margin="0,4,0,0" TextElement.FontSize="12" />
+                            </StackPanel>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Overlay" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.4" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- The main action, filled with the accent color. -->
+        <Style x:Key="PrimaryToolButton" TargetType="Button" BasedOn="{StaticResource ToolButton}">
+            <Setter Property="Background" Value="{DynamicResource AccentButtonBackground}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource AccentButtonForeground}" />
+            <Setter Property="Foreground" Value="{DynamicResource AccentButtonForeground}" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+        </Style>
+
+        <Style x:Key="ToolSeparator" TargetType="Rectangle">
+            <Setter Property="Width" Value="1" />
+            <Setter Property="Margin" Value="6,10" />
+            <Setter Property="Fill" Value="{DynamicResource DividerStrokeColorDefaultBrush}" />
+        </Style>
+
+        <!-- Thin rounded bar under the status text; PART_Track/PART_Indicator are sized by ProgressBar itself. -->
+        <Style x:Key="ThinProgressBar" TargetType="ProgressBar">
+            <Setter Property="Height" Value="4" />
+            <Setter Property="Foreground" Value="{DynamicResource SystemAccentColorPrimaryBrush}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Grid>
+                            <Border x:Name="PART_Track" CornerRadius="2" Background="{DynamicResource DividerStrokeColorDefaultBrush}" />
+                            <Border x:Name="PART_Indicator" CornerRadius="2" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}" />
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Window.InputBindings>
         <KeyBinding Key="N" Modifiers="Control" Command="{x:Static ApplicationCommands.New}" />
         <KeyBinding Key="Delete" Command="{x:Static ApplicationCommands.Delete}" />
@@ -14,7 +86,13 @@
     </Window.CommandBindings>
 
     <DockPanel>
-        <Menu DockPanel.Dock="Top" Background="White" Padding="4,2">
+        <ui:TitleBar DockPanel.Dock="Top" Title="OwnIDM">
+            <ui:TitleBar.Icon>
+                <ui:ImageIcon Source="pack://application:,,,/Assets/ownidm.ico" />
+            </ui:TitleBar.Icon>
+        </ui:TitleBar>
+
+        <Menu DockPanel.Dock="Top" Margin="6,0" Background="Transparent">
             <MenuItem Header="_Tareas">
                 <MenuItem Header="_Añadir descarga…" InputGestureText="Ctrl+N" Click="OnAddUrl" />
                 <MenuItem Header="Abrir archivo _torrent…" Click="OnOpenTorrent" />
@@ -52,133 +130,158 @@
             </MenuItem>
         </Menu>
 
-        <Border DockPanel.Dock="Top" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,1" Background="{StaticResource PanelBrush}" Padding="6,4">
-            <StackPanel Orientation="Horizontal">
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE710;" Content="Añadir URL" Click="OnAddUrl" ToolTip="Añadir una nueva descarga (Ctrl+N)" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE768;" Content="Reanudar" Click="OnResume" ToolTip="Iniciar/reanudar las descargas seleccionadas" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE769;" Content="Detener" Click="OnStop" ToolTip="Detener las descargas seleccionadas" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE71A;" Content="Detener todo" Click="OnStopAll" />
-                <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE74D;" Content="Eliminar" Click="OnDelete" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE73E;" Content="Borrar compl." Click="OnDeleteCompleted" ToolTip="Quitar de la lista las descargas completadas" />
-                <Rectangle Width="1" Fill="{StaticResource BorderBrush}" Margin="6,4" />
-                <Button x:Name="QueueButton" Style="{StaticResource ToolButton}" Tag="&#xE768;" Content="Iniciar cola" Click="OnToggleQueue" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE823;" Content="Programador" Click="OnScheduler" ToolTip="Iniciar o detener la cola a una hora" />
-                <Button x:Name="LimiterButton" Style="{StaticResource ToolButton}" Tag="&#xEC4A;" Content="Limitador" Click="OnToggleLimiter" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE8B3;" Content="Lotes" Click="OnBatch" ToolTip="Descarga por lotes (img001.jpg … img100.jpg)" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE774;" Content="Grabber" Click="OnGrabber" ToolTip="Buscar y descargar archivos de un sitio web" />
-                <Button Style="{StaticResource ToolButton}" Tag="&#xE713;" Content="Opciones" Click="OnOptions" />
-            </StackPanel>
-        </Border>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="12,4,12,8">
+            <Button Style="{StaticResource PrimaryToolButton}" Tag="&#xE710;" Content="Añadir URL" Click="OnAddUrl" ToolTip="Añadir una nueva descarga (Ctrl+N)" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE768;" Content="Reanudar" Click="OnResume" ToolTip="Iniciar/reanudar las descargas seleccionadas" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE769;" Content="Detener" Click="OnStop" ToolTip="Detener las descargas seleccionadas" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE71A;" Content="Detener todo" Click="OnStopAll" />
+            <Rectangle Style="{StaticResource ToolSeparator}" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE74D;" Content="Eliminar" Click="OnDelete" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE73E;" Content="Borrar compl." Click="OnDeleteCompleted" ToolTip="Quitar de la lista las descargas completadas" />
+            <Rectangle Style="{StaticResource ToolSeparator}" />
+            <Button x:Name="QueueButton" Style="{StaticResource ToolButton}" Tag="&#xE768;" Content="Iniciar cola" Click="OnToggleQueue" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE823;" Content="Programador" Click="OnScheduler" ToolTip="Iniciar o detener la cola a una hora" />
+            <Button x:Name="LimiterButton" Style="{StaticResource ToolButton}" Tag="&#xEC4A;" Content="Limitador" Click="OnToggleLimiter" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE8B3;" Content="Lotes" Click="OnBatch" ToolTip="Descarga por lotes (img001.jpg … img100.jpg)" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE774;" Content="Grabber" Click="OnGrabber" ToolTip="Buscar y descargar archivos de un sitio web" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE713;" Content="Opciones" Click="OnOptions" />
+        </StackPanel>
 
-        <Border DockPanel.Dock="Bottom" BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0" Background="{StaticResource PanelBrush}" Padding="10,4">
-            <DockPanel>
-                <TextBlock x:Name="TotalSpeedText" DockPanel.Dock="Right" Foreground="{StaticResource MutedTextBrush}" />
-                <TextBlock x:Name="StatusText" Foreground="{StaticResource MutedTextBrush}" />
-            </DockPanel>
-        </Border>
+        <DockPanel DockPanel.Dock="Bottom" Margin="16,6,16,8" TextElement.FontSize="12">
+            <TextBlock x:Name="TotalSpeedText" DockPanel.Dock="Right" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            <TextBlock x:Name="StatusText" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+        </DockPanel>
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="CategoryColumn" Width="210" MinWidth="0" />
+                <ColumnDefinition x:Name="CategoryColumn" Width="200" MinWidth="0" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
-            <TreeView x:Name="CategoryTree" BorderThickness="0" Background="{StaticResource PanelBrush}" Padding="4,8"
+            <TreeView x:Name="CategoryTree" BorderThickness="0" Background="Transparent" Padding="4,0,0,0"
                       SelectedItemChanged="OnCategoryChanged" />
-            <GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Stretch" Background="{StaticResource BorderBrush}" />
+            <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" Background="Transparent" />
 
-            <DataGrid x:Name="DownloadsGrid" Grid.Column="2" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
-                      GridLinesVisibility="None" BorderThickness="0" Background="White" RowHeight="28"
-                      SelectionMode="Extended" CanUserResizeRows="False" AlternatingRowBackground="#FAFBFD"
-                      MouseDoubleClick="OnGridDoubleClick">
-                <DataGrid.ColumnHeaderStyle>
-                    <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Padding" Value="8,6" />
-                        <Setter Property="Background" Value="White" />
-                        <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
-                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
-                        <Setter Property="BorderThickness" Value="0,0,1,1" />
-                    </Style>
-                </DataGrid.ColumnHeaderStyle>
-                <DataGrid.CellStyle>
-                    <Style TargetType="DataGridCell">
-                        <Setter Property="BorderThickness" Value="0" />
-                        <Setter Property="Padding" Value="8,0" />
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="DataGridCell">
-                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter VerticalAlignment="Center" />
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AccentLightBrush}" />
-                                <Setter Property="Foreground" Value="Black" />
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </DataGrid.CellStyle>
-                <DataGrid.ContextMenu>
-                    <ContextMenu>
-                        <MenuItem Header="Abrir" Click="OnOpenFile" />
-                        <MenuItem Header="Abrir carpeta" Click="OnOpenFolder" />
-                        <Separator />
-                        <MenuItem Header="Reanudar" Click="OnResume" />
-                        <MenuItem Header="Detener" Click="OnStop" />
-                        <MenuItem Header="Ver progreso" Click="OnShowProgress" />
-                        <MenuItem Header="Volver a descargar" Click="OnRedownload" />
-                        <Separator />
-                        <MenuItem Header="Añadir a la cola" Click="OnAddToQueue" />
-                        <MenuItem Header="Quitar de la cola" Click="OnRemoveFromQueue" />
-                        <Separator />
-                        <MenuItem Header="Copiar dirección" Click="OnCopyUrl" />
-                        <MenuItem Header="Eliminar" Click="OnDelete" />
-                    </ContextMenu>
-                </DataGrid.ContextMenu>
-                <DataGrid.Columns>
-                    <DataGridTemplateColumn Header="Nombre de archivo" Width="2*" SortMemberPath="FileName">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="{Binding Category, Converter={StaticResource CategoryGlyph}}" FontFamily="{StaticResource IconFont}"
-                                               Foreground="{StaticResource AccentBrush}" Margin="0,0,8,0" VerticalAlignment="Center" />
-                                    <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding Url}" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Tamaño" Width="90" Binding="{Binding TotalSize, Converter={StaticResource Bytes}}" SortMemberPath="TotalSize" />
-                    <DataGridTemplateColumn Header="Estado" Width="150" SortMemberPath="Status">
-                        <DataGridTemplateColumn.CellTemplate>
-                            <DataTemplate>
-                                <Grid>
-                                    <ProgressBar Value="{Binding Progress, Mode=OneWay}" Height="18" Background="#EEF2F7" BorderThickness="0"
-                                                 Foreground="#9CC3F5" />
-                                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" ToolTip="{Binding ErrorMessage}">
-                                        <TextBlock.Text>
-                                            <MultiBinding Converter="{StaticResource StatusText}">
-                                                <Binding Path="Status" />
-                                                <Binding Path="Progress" />
-                                                <Binding Path="TotalSize" />
-                                            </MultiBinding>
-                                        </TextBlock.Text>
-                                    </TextBlock>
-                                </Grid>
-                            </DataTemplate>
-                        </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Tiempo restante" Width="110" Binding="{Binding TimeLeft, Converter={StaticResource Duration}}" />
-                    <DataGridTextColumn Header="Velocidad" Width="100" Binding="{Binding Speed, Converter={StaticResource Speed}}" SortMemberPath="Speed" />
-                    <DataGridTextColumn Header="Conex." Width="55" Binding="{Binding ActiveConnections}" />
-                    <DataGridTextColumn Header="Último intento" Width="130" Binding="{Binding LastTryAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" SortMemberPath="LastTryAt" />
-                    <DataGridTextColumn Header="Descripción" Width="*" Binding="{Binding Description}" />
-                </DataGrid.Columns>
-            </DataGrid>
+            <!-- The list sits on a card over the Mica backdrop. -->
+            <Border Grid.Column="2" Margin="0,0,12,0" CornerRadius="8" BorderThickness="1"
+                    Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                <DataGrid x:Name="DownloadsGrid" AutoGenerateColumns="False" IsReadOnly="True" HeadersVisibility="Column"
+                          GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                          BorderThickness="0" Background="Transparent" RowHeight="40"
+                          SelectionMode="Extended" CanUserResizeRows="False" Margin="4,2,4,0"
+                          MouseDoubleClick="OnGridDoubleClick">
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource DefaultDataGridColumnHeaderStyle}">
+                            <Setter Property="Padding" Value="8,8" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                            <Setter Property="FontSize" Value="12" />
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                    <!-- Plain rows: WPF-UI's selected row shifts its cells sideways. -->
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="{DynamicResource RowSelectedBrush}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="BorderThickness" Value="0" />
+                            <Setter Property="Padding" Value="8,0" />
+                            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="DataGridCell">
+                                        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter VerticalAlignment="Center" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.CellStyle>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Abrir" Click="OnOpenFile" />
+                            <MenuItem Header="Abrir carpeta" Click="OnOpenFolder" />
+                            <Separator />
+                            <MenuItem Header="Reanudar" Click="OnResume" />
+                            <MenuItem Header="Detener" Click="OnStop" />
+                            <MenuItem Header="Ver progreso" Click="OnShowProgress" />
+                            <MenuItem Header="Volver a descargar" Click="OnRedownload" />
+                            <Separator />
+                            <MenuItem Header="Añadir a la cola" Click="OnAddToQueue" />
+                            <MenuItem Header="Quitar de la cola" Click="OnRemoveFromQueue" />
+                            <Separator />
+                            <MenuItem Header="Copiar dirección" Click="OnCopyUrl" />
+                            <MenuItem Header="Eliminar" Click="OnDelete" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="Nombre de archivo" Width="3*" SortMemberPath="FileName">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Category, Converter={StaticResource CategoryGlyph}}" FontFamily="{StaticResource IconFont}"
+                                                   FontSize="16" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding Url}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Tamaño" Width="85" Binding="{Binding TotalSize, Converter={StaticResource Bytes}}" SortMemberPath="TotalSize" />
+                        <DataGridTemplateColumn Header="Estado" Width="140" SortMemberPath="Status">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock FontSize="12" ToolTip="{Binding ErrorMessage}" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
+                                            <TextBlock.Text>
+                                                <MultiBinding Converter="{StaticResource StatusText}">
+                                                    <Binding Path="Status" />
+                                                    <Binding Path="Progress" />
+                                                    <Binding Path="TotalSize" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <ProgressBar x:Name="Bar" Style="{StaticResource ThinProgressBar}" Value="{Binding Progress, Mode=OneWay}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                            <Setter TargetName="Bar" Property="Foreground" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="Error">
+                                            <Setter TargetName="Bar" Property="Foreground" Value="{DynamicResource SystemFillColorCriticalBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status}" Value="Paused">
+                                            <Setter TargetName="Bar" Property="Foreground" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Tiempo restante" Width="110" Binding="{Binding TimeLeft, Converter={StaticResource Duration}}" />
+                        <DataGridTextColumn Header="Velocidad" Width="95" Binding="{Binding Speed, Converter={StaticResource Speed}}" SortMemberPath="Speed" />
+                        <DataGridTextColumn Header="Conex." Width="65" Binding="{Binding ActiveConnections}" />
+                        <DataGridTextColumn Header="Último intento" Width="130" Binding="{Binding LastTryAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" SortMemberPath="LastTryAt" />
+                        <DataGridTextColumn Header="Descripción" Width="*" Binding="{Binding Description}" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
         </Grid>
     </DockPanel>
-</Window>
+</ui:FluentWindow>

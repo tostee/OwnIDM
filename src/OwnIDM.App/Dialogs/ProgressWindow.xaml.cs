@@ -7,7 +7,7 @@ using OwnIDM.Core.Util;
 
 namespace OwnIDM.App;
 
-public partial class ProgressWindow : Window
+public partial class ProgressWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly DownloadItem _item;
@@ -43,7 +43,8 @@ public partial class ProgressWindow : Window
             ? "Error: " + item.ErrorMessage
             : StatusTextConverter.Describe(item.Status, item.Progress, item.TotalSize) +
               (item.Kind == DownloadKind.Torrent && item.IsActive ? $" · {item.ActiveConnections} pares conectados" : "");
-        StatusValue.Foreground = item.Status == DownloadStatus.Error ? Brushes.Firebrick : Brushes.Black;
+        StatusValue.SetResourceReference(ForegroundProperty,
+            item.Status == DownloadStatus.Error ? "SystemFillColorCriticalBrush" : "TextFillColorPrimaryBrush");
         SizeValue.Text = Format.Bytes(item.TotalSize);
         DownloadedValue.Text = item.TotalSize > 0
             ? $"{Format.Bytes(item.Downloaded)} ({item.Progress:0.00}%)"
@@ -98,12 +99,23 @@ public partial class ProgressWindow : Window
 /// <summary>Draws where each connection started and how far it got.</summary>
 public sealed class SegmentBar : FrameworkElement
 {
-    private static readonly Brush Background = new SolidColorBrush(Color.FromRgb(0xEE, 0xF2, 0xF7));
-    private static readonly Brush Active = new SolidColorBrush(Color.FromRgb(0x1F, 0x6F, 0xD8));
-    private static readonly Brush Done = new SolidColorBrush(Color.FromRgb(0x6F, 0xA8, 0xF0));
-    private static readonly Pen Marker = new(new SolidColorBrush(Color.FromRgb(0x0B, 0x3D, 0x80)), 1);
+    // Theme brushes, looked up on every render so the bar follows light/dark and the accent color.
+    private Brush Background => Theme("DividerStrokeColorDefaultBrush");
+    private Brush Active => Theme("SystemAccentColorPrimaryBrush");
+    private Brush Done
+    {
+        get
+        {
+            var brush = Active.Clone();
+            brush.Opacity = 0.5;
+            return brush;
+        }
+    }
+    private Pen Marker => new(Theme("SystemAccentColorTertiaryBrush"), 1);
 
     public DownloadItem? Item { get; set; }
+
+    private Brush Theme(string key) => TryFindResource(key) as Brush ?? Brushes.Gray;
 
     protected override void OnRender(DrawingContext dc)
     {

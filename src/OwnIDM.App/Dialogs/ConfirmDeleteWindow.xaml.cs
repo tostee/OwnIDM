@@ -3,7 +3,7 @@ using OwnIDM.Core.Models;
 
 namespace OwnIDM.App;
 
-public partial class ConfirmDeleteWindow : Window
+public partial class ConfirmDeleteWindow : Wpf.Ui.Controls.FluentWindow
 {
     public ConfirmDeleteWindow(IReadOnlyList<DownloadItem> items)
     {

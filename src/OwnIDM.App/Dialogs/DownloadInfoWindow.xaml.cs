@@ -13,7 +13,7 @@ using OwnIDM.Core.YtDlp;
 namespace OwnIDM.App;
 
 /// <summary>Shown before a download starts: category, destination, description, size.</summary>
-public partial class DownloadInfoWindow : Window
+public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly DownloadItem _item;
@@ -212,7 +212,7 @@ public partial class DownloadInfoWindow : Window
         catch (Exception ex)
         {
             InfoText.Text = "yt-dlp no pudo leer el vídeo: " + ex.Message;
-            InfoText.Foreground = System.Windows.Media.Brushes.Firebrick;
+            InfoText.SetResourceReference(ForegroundProperty, "SystemFillColorCriticalBrush");
         }
     }
 
@@ -249,7 +249,7 @@ public partial class DownloadInfoWindow : Window
             {
                 // Peers may turn up later: the download keeps looking for them.
                 InfoText.Text = ex.Message + " Puedes añadirlo igualmente; OwnIDM seguirá buscando pares.";
-                InfoText.Foreground = System.Windows.Media.Brushes.DarkGoldenrod;
+                InfoText.SetResourceReference(ForegroundProperty, "SystemFillColorCautionBrush");
             }
             else
             {
@@ -279,7 +279,7 @@ public partial class DownloadInfoWindow : Window
             : $"{selected.Count} de {_fileRows.Count} archivos";
         InfoText.Text = $"Torrent «{_torrent.Name}»   ·   {files}, {Format.Bytes(selected.Sum(r => r.Entry.Length))}   ·   Reanudable: sí" +
                         (_torrent.IsPrivate ? "   ·   privado (solo pares del rastreador)" : "");
-        InfoText.Foreground = (System.Windows.Media.Brush)FindResource("MutedTextBrush");
+        InfoText.SetResourceReference(ForegroundProperty, "TextFillColorSecondaryBrush");
         StartButton.IsEnabled = LaterButton.IsEnabled = selected.Count > 0;
     }
 
@@ -306,7 +306,7 @@ public partial class DownloadInfoWindow : Window
     {
         _ytDlpInfo = null; // a later change of quality must not hide it
         InfoText.Text = problem;
-        InfoText.Foreground = System.Windows.Media.Brushes.Firebrick;
+        InfoText.SetResourceReference(ForegroundProperty, "SystemFillColorCriticalBrush");
         StartButton.IsEnabled = LaterButton.IsEnabled = false;
     }
 
@@ -327,7 +327,7 @@ public partial class DownloadInfoWindow : Window
         if (dialog.ShowDialog() != true)
             return;
         // Start over with the tools in place.
-        InfoText.Foreground = (System.Windows.Media.Brush)FindResource("MutedTextBrush");
+        InfoText.SetResourceReference(ForegroundProperty, "TextFillColorSecondaryBrush");
         StartButton.IsEnabled = LaterButton.IsEnabled = true;
         await ProbeAsync();
     }

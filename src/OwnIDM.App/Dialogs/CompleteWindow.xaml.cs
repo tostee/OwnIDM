@@ -5,7 +5,7 @@ using OwnIDM.Core.Util;
 
 namespace OwnIDM.App;
 
-public partial class CompleteWindow : Window
+public partial class CompleteWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly DownloadItem _item;

@@ -1,127 +1,30 @@
-<Window x:Class="OwnIDM.App.OptionsWindow"
+<ui:FluentWindow x:Class="OwnIDM.App.OptionsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Opciones de OwnIDM" Style="{StaticResource DialogWindow}" WindowStartupLocation="CenterOwner" SizeToContent="Manual" Width="660" Height="540">
-    <DockPanel Margin="14">
-        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-            <Button Content="Aceptar" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
-            <Button Content="Cancelar" Style="{StaticResource DialogButton}" IsCancel="True" />
-        </StackPanel>
+    <DockPanel>
+        <ui:TitleBar DockPanel.Dock="Top" Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" ShowMinimize="False" ShowMaximize="False" />
+        <DockPanel Margin="14">
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                <Button Content="Aceptar" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnOk" />
+                <Button Content="Cancelar" Style="{StaticResource DialogButton}" IsCancel="True" />
+            </StackPanel>
 
-        <TabControl Padding="14">
-            <TabItem Header="General">
-                <StackPanel>
-                    <CheckBox x:Name="StartupBox" Content="Iniciar OwnIDM al arrancar Windows (en la bandeja)" Margin="0,4" />
-                    <CheckBox x:Name="ClipboardBox" Content="Descargar automáticamente las URL copiadas al portapapeles" Margin="0,4" />
-                    <TextBlock Text="Extensiones que activan el monitor del portapapeles" Style="{StaticResource FieldLabel}" Margin="22,4,0,4" />
-                    <TextBox x:Name="MonitoredBox" Margin="22,0,0,8" Height="52" TextWrapping="Wrap" VerticalContentAlignment="Top" />
-                    <CheckBox x:Name="ProgressBox" Content="Mostrar la ventana de progreso al iniciar una descarga" Margin="0,4" />
-                    <CheckBox x:Name="CompleteBox" Content="Mostrar el diálogo «Descarga completada»" Margin="0,4" />
-                    <CheckBox x:Name="UpdatesBox" Content="Buscar versiones nuevas de OwnIDM y de yt-dlp al iniciar (una vez al día, en GitHub)" Margin="0,4" />
-                </StackPanel>
-            </TabItem>
-
-            <TabItem Header="Conexión">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="36" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="Conexiones por descarga (1-32)" Style="{StaticResource FieldLabel}" />
-                    <ComboBox x:Name="ConnectionsBox" Grid.Column="1" Width="90" HorizontalAlignment="Left" Height="26" />
-                    <TextBlock Grid.Row="1" Text="Descargas simultáneas en la cola" Style="{StaticResource FieldLabel}" />
-                    <TextBox x:Name="ConcurrentBox" Grid.Row="1" Grid.Column="1" Width="90" HorizontalAlignment="Left" Height="26" />
-                    <TextBlock Grid.Row="2" Text="Reintentos por conexión" Style="{StaticResource FieldLabel}" />
-                    <TextBox x:Name="RetriesBox" Grid.Row="2" Grid.Column="1" Width="90" HorizontalAlignment="Left" Height="26" />
-                    <TextBlock Grid.Row="3" Text="Tiempo de espera (segundos)" Style="{StaticResource FieldLabel}" />
-                    <TextBox x:Name="TimeoutBox" Grid.Row="3" Grid.Column="1" Width="90" HorizontalAlignment="Left" Height="26" />
-                    <TextBlock Grid.Row="4" Grid.ColumnSpan="2" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="{StaticResource MutedTextBrush}"
-                               Text="Cada descarga empieza con una conexión. Cuando una conexión queda libre, parte por la mitad el tramo con más bytes pendientes (segmentación dinámica), hasta el máximo indicado. Algunos servidores limitan las conexiones; si ves errores, baja el número." />
-                </Grid>
-            </TabItem>
-
-            <TabItem Header="Guardar en">
-                <DockPanel>
-                    <Grid DockPanel.Dock="Top">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="34" />
-                            <RowDefinition Height="34" />
-                        </Grid.RowDefinitions>
-                        <TextBlock Text="Carpeta de descargas" Style="{StaticResource FieldLabel}" />
-                        <TextBox x:Name="DownloadDirBox" Grid.Column="1" Height="26" />
-                        <Button Grid.Column="2" Content="…" Width="34" Height="26" Margin="6,0,0,0" Click="OnBrowseDownloadDir" />
-                        <TextBlock Grid.Row="1" Text="Carpeta temporal" Style="{StaticResource FieldLabel}" />
-                        <TextBox x:Name="TempDirBox" Grid.Row="1" Grid.Column="1" Height="26" />
-                        <Button Grid.Row="1" Grid.Column="2" Content="…" Width="34" Height="26" Margin="6,0,0,0" Click="OnBrowseTempDir" />
-                    </Grid>
-                    <TextBlock DockPanel.Dock="Top" Text="Categorías (extensiones separadas por espacios; carpeta vacía = carpeta de descargas\Categoría)"
-                               Style="{StaticResource FieldLabel}" Margin="0,12,0,6" TextWrapping="Wrap" />
-                    <DataGrid x:Name="CategoriesGrid" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
-                              HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{StaticResource BorderBrush}">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="110" />
-                            <DataGridTextColumn Header="Extensiones" Binding="{Binding Extensions}" Width="*" />
-                            <DataGridTextColumn Header="Carpeta" Binding="{Binding Directory}" Width="150" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
-            </TabItem>
-
-            <TabItem Header="Limitador">
-                <StackPanel>
-                    <CheckBox x:Name="LimiterBox" Content="Usar el limitador de velocidad" Margin="0,4" />
-                    <StackPanel Orientation="Horizontal" Margin="22,8,0,0">
-                        <TextBlock Text="Velocidad máxima por descarga" Style="{StaticResource FieldLabel}" />
-                        <TextBox x:Name="LimitBox" Width="90" Height="26" />
-                        <TextBlock Text="KB/s" Margin="8,0,0,0" VerticalAlignment="Center" />
+            <TabControl Padding="14">
+                <TabItem Header="General">
+                    <StackPanel>
+                        <CheckBox x:Name="StartupBox" Content="Iniciar OwnIDM al arrancar Windows (en la bandeja)" Margin="0,4" />
+                        <CheckBox x:Name="ClipboardBox" Content="Descargar automáticamente las URL copiadas al portapapeles" Margin="0,4" />
+                        <TextBlock Text="Extensiones que activan el monitor del portapapeles" Style="{StaticResource FieldLabel}" Margin="22,4,0,4" />
+                        <TextBox x:Name="MonitoredBox" Margin="22,0,0,8" Height="52" TextWrapping="Wrap" VerticalContentAlignment="Top" />
+                        <CheckBox x:Name="ProgressBox" Content="Mostrar la ventana de progreso al iniciar una descarga" Margin="0,4" />
+                        <CheckBox x:Name="CompleteBox" Content="Mostrar el diálogo «Descarga completada»" Margin="0,4" />
+                        <CheckBox x:Name="UpdatesBox" Content="Buscar versiones nuevas de OwnIDM y de yt-dlp al iniciar (una vez al día, en GitHub)" Margin="0,4" />
                     </StackPanel>
-                    <TextBlock TextWrapping="Wrap" Margin="0,14,0,0" Foreground="{StaticResource MutedTextBrush}"
-                               Text="Nota: algunos servidores cortan la conexión si la velocidad es muy baja. No conviene limitar descargas de servidores que no permiten reanudar." />
-                </StackPanel>
-            </TabItem>
+                </TabItem>
 
-            <TabItem Header="Vídeo">
-                <StackPanel>
-                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}"
-                               Text="La extensión detecta los vídeos que se reproducen en una página (archivos MP4/WebM, streams HLS .m3u8 y DASH .mpd, y vídeos de YouTube) y muestra un panel «Descargar vídeo». El panel se activa o desactiva por sitio desde el icono de la extensión. Los vídeos con DRM o cifrados no se pueden descargar." />
-                    <CheckBox x:Name="ConvertBox" Content="Convertir los vídeos HLS (.ts) a .mp4 con ffmpeg, sin recodificar" Margin="0,14,0,0" />
-                    <TextBlock Text="Ruta de ffmpeg.exe (vacío = buscar en el PATH)" Style="{StaticResource FieldLabel}" Margin="22,10,0,4" />
-                    <DockPanel Margin="22,0,0,0">
-                        <Button DockPanel.Dock="Right" Content="…" Width="34" Height="26" Margin="6,0,0,0" Click="OnBrowseFfmpeg" />
-                        <TextBox x:Name="FfmpegBox" Height="26" TextChanged="OnFfmpegChanged" />
-                    </DockPanel>
-                    <TextBlock x:Name="FfmpegStatus" Margin="22,6,0,0" TextWrapping="Wrap" />
-                    <TextBlock Text="Componentes" FontWeight="SemiBold" Margin="0,18,0,0" />
-                    <TextBlock TextWrapping="Wrap" Foreground="{StaticResource MutedTextBrush}" Margin="0,4,0,0"
-                               Text="YouTube y muchos otros sitios no publican un archivo o stream descargable: para ellos OwnIDM usa yt-dlp, que necesita Deno para YouTube y ffmpeg para las calidades superiores a 360p. Son gratuitos y de código abierto; OwnIDM los instala para tu usuario y mantiene yt-dlp actualizado." />
-                    <Border Margin="0,8,0,0" Padding="10,8" Background="{StaticResource PanelBrush}" CornerRadius="4">
-                        <TextBlock x:Name="ToolsStatus" TextWrapping="Wrap" LineHeight="20" />
-                    </Border>
-                    <Button Content="Instalar o actualizar componentes…" Style="{StaticResource DialogButton}" HorizontalAlignment="Left"
-                            Margin="0,8,0,0" Click="OnInstallComponents" />
-                    <TextBlock Text="Ruta de yt-dlp.exe (vacío = buscar en el PATH)" Style="{StaticResource FieldLabel}" Margin="0,10,0,4" />
-                    <DockPanel>
-                        <Button DockPanel.Dock="Right" Content="…" Width="34" Height="26" Margin="6,0,0,0" Click="OnBrowseYtDlp" />
-                        <TextBox x:Name="YtDlpBox" Height="26" TextChanged="OnYtDlpChanged" />
-                    </DockPanel>
-                    <TextBlock x:Name="YtDlpStatus" Margin="0,6,0,0" TextWrapping="Wrap" />
-                </StackPanel>
-            </TabItem>
-
-            <TabItem Header="Torrent">
-                <StackPanel>
+                <TabItem Header="Conexión">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
@@ -131,50 +34,151 @@
                             <RowDefinition Height="36" />
                             <RowDefinition Height="36" />
                             <RowDefinition Height="36" />
+                            <RowDefinition Height="36" />
+                            <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
-                        <TextBlock Text="Puerto de escucha (1024-65535)" Style="{StaticResource FieldLabel}" />
-                        <TextBox x:Name="TorrentPortBox" Grid.Column="1" Width="90" HorizontalAlignment="Left" Height="26" />
-                        <TextBlock Grid.Row="1" Text="Conexiones por torrent (5-500)" Style="{StaticResource FieldLabel}" />
-                        <TextBox x:Name="TorrentConnectionsBox" Grid.Row="1" Grid.Column="1" Width="90" HorizontalAlignment="Left" Height="26" />
-                        <TextBlock Grid.Row="2" Text="Límite de subida por torrent" Style="{StaticResource FieldLabel}" />
-                        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
-                            <TextBox x:Name="TorrentUploadBox" Width="90" Height="26" />
-                            <TextBlock Text="KB/s (0 = sin límite)" Margin="8,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
+                        <TextBlock Text="Conexiones por descarga (1-32)" Style="{StaticResource FieldLabel}" />
+                        <ComboBox x:Name="ConnectionsBox" Grid.Column="1" Width="90" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="1" Text="Descargas simultáneas en la cola" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="ConcurrentBox" Grid.Row="1" Grid.Column="1" Width="90" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="2" Text="Reintentos por conexión" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="RetriesBox" Grid.Row="2" Grid.Column="1" Width="90" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="3" Text="Tiempo de espera (segundos)" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="TimeoutBox" Grid.Row="3" Grid.Column="1" Width="90" HorizontalAlignment="Left" />
+                        <TextBlock Grid.Row="4" Grid.ColumnSpan="2" TextWrapping="Wrap" Margin="0,12,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="Cada descarga empieza con una conexión. Cuando una conexión queda libre, parte por la mitad el tramo con más bytes pendientes (segmentación dinámica), hasta el máximo indicado. Algunos servidores limitan las conexiones; si ves errores, baja el número." />
                     </Grid>
-                    <CheckBox x:Name="TorrentDhtBox" Content="Buscar pares sin rastreador (DHT, intercambio de pares y descubrimiento local)" Margin="0,8,0,4" />
-                    <CheckBox x:Name="TorrentForwardBox" Content="Abrir el puerto en el router automáticamente (UPnP / NAT-PMP)" Margin="0,4" />
-                    <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{StaticResource MutedTextBrush}"
-                               Text="La velocidad de bajada sigue al limitador. OwnIDM comparte lo que descarga mientras el torrent está activo y deja de compartir cuando termina. Los archivos se escriben directamente en la carpeta de destino." />
-                    <TextBlock Text="Enlaces magnet y archivos .torrent" FontWeight="SemiBold" Margin="0,18,0,0" />
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button Content="Abrirlos con OwnIDM" Padding="12,4" Click="OnAssociateTorrents" />
-                        <TextBlock x:Name="TorrentAssocStatus" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
-                    </StackPanel>
-                </StackPanel>
-            </TabItem>
+                </TabItem>
 
-            <TabItem Header="Navegador">
-                <StackPanel>
-                    <CheckBox x:Name="BrowserBox" Content="Integración con Chrome / Edge / Brave / Vivaldi (registrar el host al iniciar)" Margin="0,4" />
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <TextBlock Text="Estado del host:" Style="{StaticResource FieldLabel}" />
-                        <TextBlock x:Name="HostStatus" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <TabItem Header="Guardar en">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="34" />
+                                <RowDefinition Height="34" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Carpeta de descargas" Style="{StaticResource FieldLabel}" />
+                            <TextBox x:Name="DownloadDirBox" Grid.Column="1" />
+                            <Button Grid.Column="2" Content="…" Width="34" Margin="6,0,0,0" Click="OnBrowseDownloadDir" />
+                            <TextBlock Grid.Row="1" Text="Carpeta temporal" Style="{StaticResource FieldLabel}" />
+                            <TextBox x:Name="TempDirBox" Grid.Row="1" Grid.Column="1" />
+                            <Button Grid.Row="1" Grid.Column="2" Content="…" Width="34" Margin="6,0,0,0" Click="OnBrowseTempDir" />
+                        </Grid>
+                        <TextBlock DockPanel.Dock="Top" Text="Categorías (extensiones separadas por espacios; carpeta vacía = carpeta de descargas\Categoría)"
+                                   Style="{StaticResource FieldLabel}" Margin="0,12,0,6" TextWrapping="Wrap" />
+                        <DataGrid x:Name="CategoriesGrid" AutoGenerateColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Nombre" Binding="{Binding Name}" Width="110" />
+                                <DataGridTextColumn Header="Extensiones" Binding="{Binding Extensions}" Width="*" />
+                                <DataGridTextColumn Header="Carpeta" Binding="{Binding Directory}" Width="150" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+                </TabItem>
+
+                <TabItem Header="Limitador">
+                    <StackPanel>
+                        <CheckBox x:Name="LimiterBox" Content="Usar el limitador de velocidad" Margin="0,4" />
+                        <StackPanel Orientation="Horizontal" Margin="22,8,0,0">
+                            <TextBlock Text="Velocidad máxima por descarga" Style="{StaticResource FieldLabel}" />
+                            <TextBox x:Name="LimitBox" Width="90" />
+                            <TextBlock Text="KB/s" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock TextWrapping="Wrap" Margin="0,14,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="Nota: algunos servidores cortan la conexión si la velocidad es muy baja. No conviene limitar descargas de servidores que no permiten reanudar." />
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Content="Registrar ahora" Padding="12,4" Click="OnRegisterHost" />
-                        <Button Content="Abrir carpeta de la extensión" Padding="12,4" Margin="8,0,0,0" Click="OnOpenExtensionFolder" />
-                        <Button Content="Copiar ruta" Padding="12,4" Margin="8,0,0,0" Click="OnCopyExtensionPath" />
+                </TabItem>
+
+                <TabItem Header="Vídeo">
+                    <StackPanel>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="La extensión detecta los vídeos que se reproducen en una página (archivos MP4/WebM, streams HLS .m3u8 y DASH .mpd, y vídeos de YouTube) y muestra un panel «Descargar vídeo». El panel se activa o desactiva por sitio desde el icono de la extensión. Los vídeos con DRM o cifrados no se pueden descargar." />
+                        <CheckBox x:Name="ConvertBox" Content="Convertir los vídeos HLS (.ts) a .mp4 con ffmpeg, sin recodificar" Margin="0,14,0,0" />
+                        <TextBlock Text="Ruta de ffmpeg.exe (vacío = buscar en el PATH)" Style="{StaticResource FieldLabel}" Margin="22,10,0,4" />
+                        <DockPanel Margin="22,0,0,0">
+                            <Button DockPanel.Dock="Right" Content="…" Width="34" Margin="6,0,0,0" Click="OnBrowseFfmpeg" />
+                            <TextBox x:Name="FfmpegBox" TextChanged="OnFfmpegChanged" />
+                        </DockPanel>
+                        <TextBlock x:Name="FfmpegStatus" Margin="22,6,0,0" TextWrapping="Wrap" />
+                        <TextBlock Text="Componentes" FontWeight="SemiBold" Margin="0,18,0,0" />
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0"
+                                   Text="YouTube y muchos otros sitios no publican un archivo o stream descargable: para ellos OwnIDM usa yt-dlp, que necesita Deno para YouTube y ffmpeg para las calidades superiores a 360p. Son gratuitos y de código abierto; OwnIDM los instala para tu usuario y mantiene yt-dlp actualizado." />
+                        <Border Margin="0,8,0,0" Padding="10,8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4">
+                            <TextBlock x:Name="ToolsStatus" TextWrapping="Wrap" LineHeight="20" />
+                        </Border>
+                        <Button Content="Instalar o actualizar componentes…" Style="{StaticResource DialogButton}" HorizontalAlignment="Left"
+                                Margin="0,8,0,0" Click="OnInstallComponents" />
+                        <TextBlock Text="Ruta de yt-dlp.exe (vacío = buscar en el PATH)" Style="{StaticResource FieldLabel}" Margin="0,10,0,4" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="…" Width="34" Margin="6,0,0,0" Click="OnBrowseYtDlp" />
+                            <TextBox x:Name="YtDlpBox" TextChanged="OnYtDlpChanged" />
+                        </DockPanel>
+                        <TextBlock x:Name="YtDlpStatus" Margin="0,6,0,0" TextWrapping="Wrap" />
                     </StackPanel>
-                    <TextBlock TextWrapping="Wrap" Margin="0,16,0,0" LineHeight="20">
-                        <Run FontWeight="SemiBold" Text="Instalar la extensión (una sola vez):" /><LineBreak />
-                        <Run Text="1. Abre chrome://extensions (o edge://extensions)." /><LineBreak />
-                        <Run Text="2. Activa el «Modo de desarrollador»." /><LineBreak />
-                        <Run Text="3. Pulsa «Cargar descomprimida» y elige la carpeta de la extensión." /><LineBreak />
-                        <Run Text="Las descargas del navegador pasarán a OwnIDM. Clic en el icono de la extensión para activar/desactivar la captura; clic derecho en un enlace → «Descargar con OwnIDM»." />
-                    </TextBlock>
-                </StackPanel>
-            </TabItem>
-        </TabControl>
+                </TabItem>
+
+                <TabItem Header="Torrent">
+                    <StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="36" />
+                                <RowDefinition Height="36" />
+                                <RowDefinition Height="36" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Puerto de escucha (1024-65535)" Style="{StaticResource FieldLabel}" />
+                            <TextBox x:Name="TorrentPortBox" Grid.Column="1" Width="90" HorizontalAlignment="Left" />
+                            <TextBlock Grid.Row="1" Text="Conexiones por torrent (5-500)" Style="{StaticResource FieldLabel}" />
+                            <TextBox x:Name="TorrentConnectionsBox" Grid.Row="1" Grid.Column="1" Width="90" HorizontalAlignment="Left" />
+                            <TextBlock Grid.Row="2" Text="Límite de subida por torrent" Style="{StaticResource FieldLabel}" />
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                                <TextBox x:Name="TorrentUploadBox" Width="90" />
+                                <TextBlock Text="KB/s (0 = sin límite)" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                        <CheckBox x:Name="TorrentDhtBox" Content="Buscar pares sin rastreador (DHT, intercambio de pares y descubrimiento local)" Margin="0,8,0,4" />
+                        <CheckBox x:Name="TorrentForwardBox" Content="Abrir el puerto en el router automáticamente (UPnP / NAT-PMP)" Margin="0,4" />
+                        <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="La velocidad de bajada sigue al limitador. OwnIDM comparte lo que descarga mientras el torrent está activo y deja de compartir cuando termina. Los archivos se escriben directamente en la carpeta de destino." />
+                        <TextBlock Text="Enlaces magnet y archivos .torrent" FontWeight="SemiBold" Margin="0,18,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <Button Content="Abrirlos con OwnIDM" Padding="12,4" Click="OnAssociateTorrents" />
+                            <TextBlock x:Name="TorrentAssocStatus" Margin="10,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </StackPanel>
+                </TabItem>
+
+                <TabItem Header="Navegador">
+                    <StackPanel>
+                        <CheckBox x:Name="BrowserBox" Content="Integración con Chrome / Edge / Brave / Vivaldi (registrar el host al iniciar)" Margin="0,4" />
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <TextBlock Text="Estado del host:" Style="{StaticResource FieldLabel}" />
+                            <TextBlock x:Name="HostStatus" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Button Content="Registrar ahora" Padding="12,4" Click="OnRegisterHost" />
+                            <Button Content="Abrir carpeta de la extensión" Padding="12,4" Margin="8,0,0,0" Click="OnOpenExtensionFolder" />
+                            <Button Content="Copiar ruta" Padding="12,4" Margin="8,0,0,0" Click="OnCopyExtensionPath" />
+                        </StackPanel>
+                        <TextBlock TextWrapping="Wrap" Margin="0,16,0,0" LineHeight="20">
+                            <Run FontWeight="SemiBold" Text="Instalar la extensión (una sola vez):" /><LineBreak />
+                            <Run Text="1. Abre chrome://extensions (o edge://extensions)." /><LineBreak />
+                            <Run Text="2. Activa el «Modo de desarrollador»." /><LineBreak />
+                            <Run Text="3. Pulsa «Cargar descomprimida» y elige la carpeta de la extensión." /><LineBreak />
+                            <Run Text="Las descargas del navegador pasarán a OwnIDM. Clic en el icono de la extensión para activar/desactivar la captura; clic derecho en un enlace → «Descargar con OwnIDM»." />
+                        </TextBlock>
+                    </StackPanel>
+                </TabItem>
+            </TabControl>
+        </DockPanel>
     </DockPanel>
-</Window>
+</ui:FluentWindow>

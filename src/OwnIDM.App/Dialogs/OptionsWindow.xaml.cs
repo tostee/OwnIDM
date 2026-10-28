@@ -10,7 +10,7 @@ using OwnIDM.Core.YtDlp;
 
 namespace OwnIDM.App;
 
-public partial class OptionsWindow : Window
+public partial class OptionsWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly ObservableCollection<Category> _categories;
@@ -193,7 +193,7 @@ public partial class OptionsWindow : Window
         FfmpegStatus.Text = found is null
             ? "ffmpeg no encontrado: los vídeos HLS se guardarán como .ts (se reproducen en VLC y la mayoría de reproductores)."
             : "ffmpeg encontrado: " + found;
-        FfmpegStatus.Foreground = found is null ? System.Windows.Media.Brushes.DarkGoldenrod : System.Windows.Media.Brushes.SeaGreen;
+        FfmpegStatus.SetResourceReference(ForegroundProperty, found is null ? "SystemFillColorCautionBrush" : "SystemFillColorSuccessBrush");
     }
 
     private void OnYtDlpChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -204,7 +204,7 @@ public partial class OptionsWindow : Window
         YtDlpStatus.Text = found is null
             ? "yt-dlp no encontrado: instálalo con «Instalar o actualizar componentes»."
             : "yt-dlp: " + found + (js ? "" : "\nNo hay Deno ni Node.js: YouTube puede ofrecer pocas calidades o fallar.");
-        YtDlpStatus.Foreground = found is null || !js ? System.Windows.Media.Brushes.DarkGoldenrod : System.Windows.Media.Brushes.SeaGreen;
+        YtDlpStatus.SetResourceReference(ForegroundProperty, found is null || !js ? "SystemFillColorCautionBrush" : "SystemFillColorSuccessBrush");
     }
 
     /// <summary>One line per component: OwnIDM's own copy (with version), one found elsewhere, or missing.</summary>

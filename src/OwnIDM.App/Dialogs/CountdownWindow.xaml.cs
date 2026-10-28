@@ -8,7 +8,7 @@ using OwnIDM.Core.Scheduling;
 namespace OwnIDM.App;
 
 /// <summary>Cancelable countdown before the "when the queue finishes" action.</summary>
-public partial class CountdownWindow : Window
+public partial class CountdownWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly CompletionAction _action;

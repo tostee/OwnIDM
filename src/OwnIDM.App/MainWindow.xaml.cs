@@ -18,7 +18,7 @@ using WinForms = System.Windows.Forms;
 
 namespace OwnIDM.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 {
     private const int WM_CLIPBOARDUPDATE = 0x031D;
 
@@ -82,14 +82,15 @@ public partial class MainWindow : Window
     private static TreeViewItem Node(string text, string glyph, Func<DownloadItem, bool> filter)
     {
         var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 3, 0, 3) };
-        header.Children.Add(new TextBlock
+        var icon = new TextBlock
         {
             Text = glyph,
             FontFamily = (System.Windows.Media.FontFamily)Application.Current.Resources["IconFont"],
-            Foreground = (System.Windows.Media.Brush)Application.Current.Resources["AccentBrush"],
             Margin = new Thickness(0, 0, 8, 0),
             VerticalAlignment = VerticalAlignment.Center,
-        });
+        };
+        icon.SetResourceReference(TextBlock.ForegroundProperty, "AccentTextFillColorPrimaryBrush");
+        header.Children.Add(icon);
         header.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
         return new TreeViewItem { Header = header, Tag = filter };
     }

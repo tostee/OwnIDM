@@ -1,80 +1,84 @@
-<Window x:Class="OwnIDM.App.DownloadInfoWindow"
+<ui:FluentWindow x:Class="OwnIDM.App.DownloadInfoWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="Información del archivo a descargar" Style="{StaticResource DialogWindow}"
         Icon="/Assets/ownidm.ico" ShowInTaskbar="True" Topmost="True" WindowStartupLocation="CenterScreen">
-    <Grid Margin="18" Width="600">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+    <DockPanel>
+        <ui:TitleBar DockPanel.Dock="Top" Title="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" ShowMinimize="False" ShowMaximize="False" />
+        <Grid Margin="18" Width="600">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <TextBlock Text="URL" Style="{StaticResource FieldLabel}" />
-        <TextBox x:Name="UrlBox" Grid.Column="1" Grid.ColumnSpan="2" IsReadOnly="True" Height="28" Background="{StaticResource PanelBrush}" />
+            <TextBlock Text="URL" Style="{StaticResource FieldLabel}" />
+            <TextBox x:Name="UrlBox" Grid.Column="1" Grid.ColumnSpan="2" IsReadOnly="True" />
 
-        <TextBlock Grid.Row="1" Text="Categoría" Style="{StaticResource FieldLabel}" Margin="0,10,12,0" />
-        <ComboBox x:Name="CategoryBox" Grid.Row="1" Grid.Column="1" Margin="0,10,0,0" Height="28" Width="220" HorizontalAlignment="Left"
-                  SelectionChanged="OnCategoryChanged" />
+            <TextBlock Grid.Row="1" Text="Categoría" Style="{StaticResource FieldLabel}" Margin="0,10,12,0" />
+            <ComboBox x:Name="CategoryBox" Grid.Row="1" Grid.Column="1" Margin="0,10,0,0" Width="220" HorizontalAlignment="Left"
+                      SelectionChanged="OnCategoryChanged" />
 
-        <TextBlock x:Name="PathLabel" Grid.Row="2" Text="Guardar como" Style="{StaticResource FieldLabel}" Margin="0,10,12,0" />
-        <TextBox x:Name="PathBox" Grid.Row="2" Grid.Column="1" Margin="0,10,0,0" Height="28" TextChanged="OnPathEdited" />
-        <Button Grid.Row="2" Grid.Column="2" Content="…" Width="36" Margin="6,10,0,0" Click="OnBrowse" ToolTip="Elegir carpeta y nombre" />
+            <TextBlock x:Name="PathLabel" Grid.Row="2" Text="Guardar como" Style="{StaticResource FieldLabel}" Margin="0,10,12,0" />
+            <TextBox x:Name="PathBox" Grid.Row="2" Grid.Column="1" Margin="0,10,0,0" TextChanged="OnPathEdited" />
+            <Button Grid.Row="2" Grid.Column="2" Content="…" Width="36" Margin="6,10,0,0" Click="OnBrowse" ToolTip="Elegir carpeta y nombre" />
 
-        <TextBlock Grid.Row="3" Text="Descripción" Style="{StaticResource FieldLabel}" Margin="0,10,12,0" />
-        <TextBox x:Name="DescriptionBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0" Height="28" />
+            <TextBlock Grid.Row="3" Text="Descripción" Style="{StaticResource FieldLabel}" Margin="0,10,12,0" />
+            <TextBox x:Name="DescriptionBox" Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,10,0,0" />
 
-        <Border Grid.Row="4" Grid.ColumnSpan="3" Margin="0,14,0,0" Padding="10,8" Background="{StaticResource PanelBrush}" CornerRadius="4">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
-                    <TextBlock x:Name="InfoText" Text="Obteniendo información del servidor…" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" MaxWidth="540" />
+            <Border Grid.Row="4" Grid.ColumnSpan="3" Margin="0,14,0,0" Padding="10,8" Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" CornerRadius="4">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE946;" FontFamily="{StaticResource IconFont}" Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                        <TextBlock x:Name="InfoText" Text="Obteniendo información del servidor…" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxWidth="540" />
+                    </StackPanel>
+                    <Button x:Name="InstallToolsButton" Content="Instalar componentes…" Style="{StaticResource DialogButton}"
+                            HorizontalAlignment="Left" Margin="0,8,0,0" Visibility="Collapsed" Click="OnInstallTools" />
+                    <StackPanel x:Name="QualityPanel" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
+                        <TextBlock Text="Calidad del vídeo" Style="{StaticResource FieldLabel}" />
+                        <ComboBox x:Name="QualityBox" Width="260" DisplayMemberPath="Label" />
+                    </StackPanel>
+                    <StackPanel x:Name="TorrentPanel" Margin="0,8,0,0" Visibility="Collapsed">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                <Button Content="Todos" Padding="10,2" Click="OnSelectAllFiles" />
+                                <Button Content="Ninguno" Padding="10,2" Margin="6,0,0,0" Click="OnSelectNoFiles" />
+                            </StackPanel>
+                            <TextBlock Text="Archivos a descargar" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ListView x:Name="FilesList" Height="200" Margin="0,6,0,0" Style="{StaticResource GridListView}">
+                            <ListView.View>
+                                <GridView>
+                                    <GridViewColumn Width="34">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <CheckBox IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Click="OnFileToggled" />
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                    <GridViewColumn Header="Archivo" Width="410" DisplayMemberBinding="{Binding Path}" />
+                                    <GridViewColumn Header="Tamaño" Width="90" DisplayMemberBinding="{Binding Size}" />
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                    </StackPanel>
                 </StackPanel>
-                <Button x:Name="InstallToolsButton" Content="Instalar componentes…" Style="{StaticResource DialogButton}"
-                        HorizontalAlignment="Left" Margin="0,8,0,0" Visibility="Collapsed" Click="OnInstallTools" />
-                <StackPanel x:Name="QualityPanel" Orientation="Horizontal" Margin="0,8,0,0" Visibility="Collapsed">
-                    <TextBlock Text="Calidad del vídeo" Style="{StaticResource FieldLabel}" />
-                    <ComboBox x:Name="QualityBox" Width="260" Height="26" DisplayMemberPath="Label" />
-                </StackPanel>
-                <StackPanel x:Name="TorrentPanel" Margin="0,8,0,0" Visibility="Collapsed">
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                            <Button Content="Todos" Padding="10,2" Click="OnSelectAllFiles" />
-                            <Button Content="Ninguno" Padding="10,2" Margin="6,0,0,0" Click="OnSelectNoFiles" />
-                        </StackPanel>
-                        <TextBlock Text="Archivos a descargar" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    </DockPanel>
-                    <ListView x:Name="FilesList" Height="200" Margin="0,6,0,0" BorderBrush="{StaticResource BorderBrush}">
-                        <ListView.View>
-                            <GridView>
-                                <GridViewColumn Width="34">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <CheckBox IsChecked="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Click="OnFileToggled" />
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn Header="Archivo" Width="410" DisplayMemberBinding="{Binding Path}" />
-                                <GridViewColumn Header="Tamaño" Width="90" DisplayMemberBinding="{Binding Size}" />
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
-                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                <Button x:Name="StartButton" Content="Iniciar descarga" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnStartNow" />
+                <Button x:Name="LaterButton" Content="Descargar más tarde" Style="{StaticResource DialogButton}" Click="OnLater" ToolTip="Añadir a la cola principal" />
+                <Button Content="Cancelar" Style="{StaticResource DialogButton}" IsCancel="True" Click="OnCancel" />
             </StackPanel>
-        </Border>
-
-        <StackPanel Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
-            <Button x:Name="StartButton" Content="Iniciar descarga" Style="{StaticResource PrimaryButton}" IsDefault="True" Click="OnStartNow" />
-            <Button x:Name="LaterButton" Content="Descargar más tarde" Style="{StaticResource DialogButton}" Click="OnLater" ToolTip="Añadir a la cola principal" />
-            <Button Content="Cancelar" Style="{StaticResource DialogButton}" IsCancel="True" Click="OnCancel" />
-        </StackPanel>
-    </Grid>
-</Window>
+        </Grid>
+    </DockPanel>
+</ui:FluentWindow>

@@ -10,7 +10,7 @@ using OwnIDM.Core.Manager;
 
 namespace OwnIDM.App;
 
-public partial class GrabberWindow : Window
+public partial class GrabberWindow : Wpf.Ui.Controls.FluentWindow
 {
     private static readonly (string Label, string Masks)[] Presets =
     [

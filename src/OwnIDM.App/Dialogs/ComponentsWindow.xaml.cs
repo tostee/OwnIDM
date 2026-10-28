@@ -6,7 +6,7 @@ using OwnIDM.Core.Util;
 namespace OwnIDM.App;
 
 /// <summary>Shows what will be downloaded (versions, sizes) and installs it with progress.</summary>
-public partial class ComponentsWindow : Window
+public partial class ComponentsWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly DownloadManager _manager;
     private readonly IReadOnlyList<Tool> _tools;
@@ -87,7 +87,7 @@ public partial class ComponentsWindow : Window
             _installing = false;
             Bar.Visibility = Visibility.Collapsed;
             StatusText.Text = "Error: " + ex.Message;
-            StatusText.Foreground = System.Windows.Media.Brushes.Firebrick;
+            StatusText.SetResourceReference(ForegroundProperty, "SystemFillColorCriticalBrush");
             InstallButton.Content = "Reintentar";
             InstallButton.IsEnabled = true;
         }

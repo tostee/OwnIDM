@@ -8,7 +8,7 @@ using OwnIDM.Core.Scheduling;
 
 namespace OwnIDM.App;
 
-public partial class SchedulerWindow : Window
+public partial class SchedulerWindow : Wpf.Ui.Controls.FluentWindow
 {
     private static readonly (DayOfWeek Day, string Label)[] WeekDays =
     [

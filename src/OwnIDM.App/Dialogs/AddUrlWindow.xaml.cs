@@ -2,7 +2,7 @@ using System.Windows;
 
 namespace OwnIDM.App;
 
-public partial class AddUrlWindow : Window
+public partial class AddUrlWindow : Wpf.Ui.Controls.FluentWindow
 {
     public AddUrlWindow()
     {
