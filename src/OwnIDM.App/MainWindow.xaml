@@ -7,6 +7,9 @@
         ExtendsContentIntoTitleBar="True" WindowBackdropType="Mica" WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen" AllowDrop="True" Drop="OnDrop" DragOver="OnDragOver">
     <Window.Resources>
+        <!-- Toolbar labels; collapsed (icons only, see UpdateToolbarLayout) when the window is too narrow for them. -->
+        <Visibility x:Key="ToolLabelVisibility">Visible</Visibility>
+
         <!-- Large toolbar button: glyph above a label, like a classic download manager.
              The glyph takes its color from BorderBrush (the border itself is not drawn). -->
         <Style x:Key="ToolButton" TargetType="Button">
@@ -27,7 +30,8 @@
                             <StackPanel Margin="{TemplateBinding Padding}">
                                 <TextBlock Text="{TemplateBinding Tag}" FontFamily="{StaticResource IconFont}" FontSize="20"
                                            HorizontalAlignment="Center" Foreground="{TemplateBinding BorderBrush}" />
-                                <ContentPresenter HorizontalAlignment="Center" Margin="0,4,0,0" TextElement.FontSize="12" />
+                                <ContentPresenter HorizontalAlignment="Center" Margin="0,4,0,0" TextElement.FontSize="12"
+                                                  Visibility="{DynamicResource ToolLabelVisibility}" />
                             </StackPanel>
                         </Grid>
                         <ControlTemplate.Triggers>
@@ -130,13 +134,17 @@
             </MenuItem>
         </Menu>
 
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="12,4,12,8">
+        <!-- The scroller only measures: its extent is the width the buttons want, its viewport the width they get. -->
+        <ScrollViewer x:Name="ToolbarScroller" DockPanel.Dock="Top" Margin="12,4,12,8" Focusable="False"
+                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" CanContentScroll="False"
+                      ScrollChanged="OnToolbarScrollChanged">
+        <StackPanel x:Name="Toolbar" Orientation="Horizontal">
             <Button Style="{StaticResource PrimaryToolButton}" Tag="&#xE710;" Content="Añadir URL" Click="OnAddUrl" ToolTip="Añadir una nueva descarga (Ctrl+N)" />
             <Button Style="{StaticResource ToolButton}" Tag="&#xE768;" Content="Reanudar" Click="OnResume" ToolTip="Iniciar/reanudar las descargas seleccionadas" />
             <Button Style="{StaticResource ToolButton}" Tag="&#xE769;" Content="Detener" Click="OnStop" ToolTip="Detener las descargas seleccionadas" />
-            <Button Style="{StaticResource ToolButton}" Tag="&#xE71A;" Content="Detener todo" Click="OnStopAll" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE71A;" Content="Detener todo" Click="OnStopAll" ToolTip="Detener todas las descargas" />
             <Rectangle Style="{StaticResource ToolSeparator}" />
-            <Button Style="{StaticResource ToolButton}" Tag="&#xE74D;" Content="Eliminar" Click="OnDelete" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE74D;" Content="Eliminar" Click="OnDelete" ToolTip="Eliminar las descargas seleccionadas (Supr)" />
             <Button Style="{StaticResource ToolButton}" Tag="&#xE73E;" Content="Borrar compl." Click="OnDeleteCompleted" ToolTip="Quitar de la lista las descargas completadas" />
             <Rectangle Style="{StaticResource ToolSeparator}" />
             <Button x:Name="QueueButton" Style="{StaticResource ToolButton}" Tag="&#xE768;" Content="Iniciar cola" Click="OnToggleQueue" />
@@ -144,8 +152,9 @@
             <Button x:Name="LimiterButton" Style="{StaticResource ToolButton}" Tag="&#xEC4A;" Content="Limitador" Click="OnToggleLimiter" />
             <Button Style="{StaticResource ToolButton}" Tag="&#xE8B3;" Content="Lotes" Click="OnBatch" ToolTip="Descarga por lotes (img001.jpg … img100.jpg)" />
             <Button Style="{StaticResource ToolButton}" Tag="&#xE774;" Content="Grabber" Click="OnGrabber" ToolTip="Buscar y descargar archivos de un sitio web" />
-            <Button Style="{StaticResource ToolButton}" Tag="&#xE713;" Content="Opciones" Click="OnOptions" />
+            <Button Style="{StaticResource ToolButton}" Tag="&#xE713;" Content="Opciones" Click="OnOptions" ToolTip="Opciones" />
         </StackPanel>
+        </ScrollViewer>
 
         <DockPanel DockPanel.Dock="Bottom" Margin="16,6,16,8" TextElement.FontSize="12">
             <TextBlock x:Name="TotalSpeedText" DockPanel.Dock="Right" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
@@ -233,7 +242,7 @@
                         </ContextMenu>
                     </DataGrid.ContextMenu>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Nombre de archivo" Width="3*" SortMemberPath="FileName">
+                        <DataGridTemplateColumn Header="Nombre de archivo" Width="3*" MinWidth="180" SortMemberPath="FileName">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal">
@@ -244,8 +253,8 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Tamaño" Width="85" Binding="{Binding TotalSize, Converter={StaticResource Bytes}}" SortMemberPath="TotalSize" />
-                        <DataGridTemplateColumn Header="Estado" Width="140" SortMemberPath="Status">
+                        <DataGridTextColumn Header="Tamaño" Width="85" MinWidth="70" Binding="{Binding TotalSize, Converter={StaticResource Bytes}}" SortMemberPath="TotalSize" />
+                        <DataGridTemplateColumn Header="Estado" Width="140" MinWidth="110" SortMemberPath="Status">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel VerticalAlignment="Center">
@@ -274,11 +283,11 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Tiempo restante" Width="110" Binding="{Binding TimeLeft, Converter={StaticResource Duration}}" />
-                        <DataGridTextColumn Header="Velocidad" Width="95" Binding="{Binding Speed, Converter={StaticResource Speed}}" SortMemberPath="Speed" />
-                        <DataGridTextColumn Header="Conex." Width="65" Binding="{Binding ActiveConnections}" />
-                        <DataGridTextColumn Header="Último intento" Width="130" Binding="{Binding LastTryAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" SortMemberPath="LastTryAt" />
-                        <DataGridTextColumn Header="Descripción" Width="*" Binding="{Binding Description}" />
+                        <DataGridTextColumn Header="Tiempo restante" Width="110" MinWidth="90" Binding="{Binding TimeLeft, Converter={StaticResource Duration}}" />
+                        <DataGridTextColumn Header="Velocidad" Width="95" MinWidth="80" Binding="{Binding Speed, Converter={StaticResource Speed}}" SortMemberPath="Speed" />
+                        <DataGridTextColumn Header="Conex." Width="65" MinWidth="55" Binding="{Binding ActiveConnections}" />
+                        <DataGridTextColumn Header="Último intento" Width="130" MinWidth="110" Binding="{Binding LastTryAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}" SortMemberPath="LastTryAt" />
+                        <DataGridTextColumn Header="Descripción" Width="*" MinWidth="100" Binding="{Binding Description}" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>

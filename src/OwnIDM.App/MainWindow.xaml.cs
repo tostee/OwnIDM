@@ -141,9 +141,56 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
         if (_manager.QueueRunning)
             _countdown?.Close(); // the queue started again: nothing has finished
+        // Glyphs and tooltips also tell the state when the toolbar shows icons only.
         QueueButton.Content = _manager.QueueRunning ? "Detener cola" : "Iniciar cola";
+        QueueButton.Tag = _manager.QueueRunning ? "" : "";
+        QueueButton.ToolTip = _manager.QueueRunning ? "Detener la cola principal" : "Iniciar la cola principal";
         LimiterMenu.IsChecked = _manager.Settings.SpeedLimiterEnabled;
         LimiterButton.Content = _manager.Settings.SpeedLimiterEnabled ? "Limitador: sí" : "Limitador";
+        LimiterButton.ToolTip = _manager.Settings.SpeedLimiterEnabled
+            ? "Limitador de velocidad activado (clic para desactivarlo)"
+            : "Activar el limitador de velocidad";
+    }
+
+    // Width the toolbar needs with its labels, measured the last time they were shown.
+    private double _toolbarFullWidth;
+    private bool _toolbarCompact;
+
+    /// <summary>
+    /// When the window is too narrow for the labelled buttons, the toolbar shows icons only (with their
+    /// tooltips) instead of cutting off the last buttons; it gets the labels back once they fit again.
+    /// </summary>
+    private void OnToolbarScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        if (e.ExtentWidthChange == 0 && e.ViewportWidthChange == 0)
+            return;
+        double available = ToolbarScroller.ViewportWidth, wanted = ToolbarScroller.ExtentWidth;
+        if (available <= 0)
+            return;
+        if (!_toolbarCompact)
+        {
+            _toolbarFullWidth = wanted;
+            if (wanted > available + 0.5)
+                SetToolbarCompact(true);
+        }
+        else if (_toolbarFullWidth <= available)
+        {
+            SetToolbarCompact(false);
+        }
+    }
+
+    private void SetToolbarCompact(bool compact)
+    {
+        _toolbarCompact = compact;
+        Resources["ToolLabelVisibility"] = compact ? Visibility.Collapsed : Visibility.Visible;
+        foreach (var button in Toolbar.Children.OfType<Button>())
+        {
+            if (compact)
+                button.MinWidth = 44;
+            else
+                button.ClearValue(MinWidthProperty);
+        }
+        ToolbarScroller.ScrollToHorizontalOffset(0);
     }
 
     // ---------------------------------------------------------------- adding downloads
