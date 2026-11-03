@@ -48,7 +48,7 @@ public sealed class DownloadEngine : IDisposable
     private TimeSpan IoTimeout => TimeSpan.FromSeconds(Math.Max(5, _settings.TimeoutSeconds));
 
     public string TempPathFor(DownloadItem item) =>
-        Path.Combine(_settings.TempDirectory, item.Id.ToString("N") + ".part");
+        Path.Combine(TempFolder.For(_settings, item), item.Id.ToString("N") + ".part");
 
     /// <summary>Asks for the first byte to learn name, size and range support.</summary>
     public async Task<ProbeResult> ProbeAsync(string url, string? referrer, string? cookies, string? userAgent, CancellationToken ct)
@@ -133,7 +133,7 @@ public sealed class DownloadEngine : IDisposable
         private readonly CancellationToken _ct;
         private readonly AppSettings _settings;
         private readonly RateLimiter _limiter;
-        private readonly string _tempPath;
+        private string _tempPath = "";
         private SafeFileHandle? _file;
         private volatile bool _canSplit;
         private volatile Exception? _lastError;
@@ -145,7 +145,6 @@ public sealed class DownloadEngine : IDisposable
             _ct = ct;
             _settings = engine._settings;
             _limiter = new RateLimiter(() => _settings.EffectiveSpeedLimit);
-            _tempPath = engine.TempPathFor(item);
         }
 
         public async Task RunAsync()
@@ -156,7 +155,8 @@ public sealed class DownloadEngine : IDisposable
             HttpResponseMessage? first = null;
             try
             {
-                Directory.CreateDirectory(_settings.TempDirectory);
+                var tempDir = TempFolder.Prepare(_settings, _item);
+                _tempPath = _engine.TempPathFor(_item);
 
                 bool resume;
                 lock (_item.SyncRoot)
@@ -188,6 +188,7 @@ public sealed class DownloadEngine : IDisposable
                             _item.Segments.Add(firstSegment);
                         }
                     }
+                    TempFolder.Create(tempDir);
                     _file = File.OpenHandle(_tempPath, FileMode.Create, FileAccess.Write, FileShare.Read,
                         FileOptions.Asynchronous, preallocationSize: Math.Max(0, total));
                     _canSplit = resumable && total > 0;
@@ -266,6 +267,7 @@ public sealed class DownloadEngine : IDisposable
                 }
             }
             _item.FileName = Path.GetFileName(target);
+            TempFolder.Release(_item);
 
             lock (_item.SyncRoot)
                 _item.Segments.Clear();

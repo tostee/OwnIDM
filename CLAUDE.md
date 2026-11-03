@@ -72,7 +72,9 @@ and dispatches in `RunAsync` on `DownloadItem.Kind`:
 
 The manager is driven from the UI thread: `MainWindow` runs a 500 ms `DispatcherTimer` that calls `Manager.Tick()`, which
 refreshes progress/speed and saves state when dirty. `Persistence` serializes items (including segment state for resume)
-and `AppSettings` as JSON in `%APPDATA%\OwnIDM`. In-progress `.part` files live in `%LOCALAPPDATA%\OwnIDM\Temp`.
+and `AppSettings` as JSON in `%APPDATA%\OwnIDM`. In-progress `.part` files live in a hidden `OwnIDM.tmp` folder inside each download's destination
+(`Engine/TempFolder`, pinned per item in `DownloadItem.TempDirectory` so a settings change never orphans them);
+`AppSettings.TempDirectory` (`%LOCALAPPDATA%\OwnIDM\Temp`) is only the fallback.
 
 Other Core pieces: `Tools/ToolManager` downloads yt-dlp, ffmpeg and Deno on demand into `%LOCALAPPDATA%\OwnIDM\tools`,
 verifying SHA-256 (explicit path in settings > OwnIDM's copy > PATH); `Update/AppUpdater` downloads the new installer with

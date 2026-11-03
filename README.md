@@ -175,8 +175,10 @@ La extensión tiene una clave fija en su `manifest.json`, por lo que su ID es si
 | `tests/OwnIDM.Core.Tests` | Tests xUnit del motor |
 | `installer` | Script de Inno Setup y `build-installer.ps1` |
 
-Datos del usuario: `%APPDATA%\OwnIDM` (lista y ajustes), `%LOCALAPPDATA%\OwnIDM\Temp`
-(archivos `.part` en curso), `%LOCALAPPDATA%\OwnIDM\tools` (yt-dlp, ffmpeg y Deno) y
+Datos del usuario: `%APPDATA%\OwnIDM` (lista y ajustes), una carpeta oculta `OwnIDM.tmp` dentro de la
+carpeta de destino de cada descarga (archivos `.part` en curso, en el mismo disco que el archivo final; se
+borra al terminar), `%LOCALAPPDATA%\OwnIDM\Temp` (carpeta temporal general: solo para destinos que no
+admiten la anterior o si se desactiva en Opciones), `%LOCALAPPDATA%\OwnIDM\tools` (yt-dlp, ffmpeg y Deno) y
 `%LOCALAPPDATA%\OwnIDM\Torrent` (metadatos de los torrents, fast-resume y caché de la DHT).
 
 ## Pendiente respecto a IDM

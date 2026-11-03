@@ -61,6 +61,7 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="34" />
                                 <RowDefinition Height="34" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <TextBlock Text="Carpeta de descargas" Style="{StaticResource FieldLabel}" />
                             <TextBox x:Name="DownloadDirBox" Grid.Column="1" />
@@ -68,6 +69,9 @@
                             <TextBlock Grid.Row="1" Text="Carpeta temporal" Style="{StaticResource FieldLabel}" />
                             <TextBox x:Name="TempDirBox" Grid.Row="1" Grid.Column="1" />
                             <Button Grid.Row="1" Grid.Column="2" Content="…" Width="34" Margin="6,0,0,0" Click="OnBrowseTempDir" />
+                            <CheckBox x:Name="TempInDownloadFolderBox" Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2" Margin="0,6,0,0"
+                                      Content="Guardar los temporales en la carpeta de destino (recomendado)"
+                                      ToolTip="Cada descarga en curso ocupa espacio en el disco al que va (en una carpeta oculta OwnIDM.tmp) y al terminar solo se renombra. La carpeta temporal se usa únicamente si el destino no lo permite." />
                         </Grid>
                         <TextBlock DockPanel.Dock="Top" Text="Categorías (extensiones separadas por espacios; carpeta vacía = carpeta de descargas\Categoría)"
                                    Style="{StaticResource FieldLabel}" Margin="0,12,0,6" TextWrapping="Wrap" />

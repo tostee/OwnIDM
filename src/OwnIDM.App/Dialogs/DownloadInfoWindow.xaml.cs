@@ -62,7 +62,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
             _probe.Cancel();
             // The page saved by the probe is only of use to a download that was added.
             if (!_accepted && _item.Kind == DownloadKind.YtDlp)
-                YtDlpDownloader.TryDeleteDirectory(_manager.YtDlp.TempDirectoryFor(_item));
+                _manager.YtDlp.DeleteTempFiles(_item);
             // Likewise the torrent metadata, unless another download in the list uses it.
             if (!_accepted && _torrent is not null && !_manager.Items.Any(i => i.InfoHash == _torrent.InfoHash))
                 TryDelete(_manager.Torrents.MetadataPathFor(_torrent.InfoHash));

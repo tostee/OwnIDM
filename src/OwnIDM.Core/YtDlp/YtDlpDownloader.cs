@@ -328,13 +328,22 @@ public sealed class YtDlpDownloader
     public YtDlpDownloader(AppSettings settings) => _settings = settings;
 
     public string TempDirectoryFor(DownloadItem item) =>
-        Path.Combine(_settings.TempDirectory, item.Id.ToString("N") + ".ytdlp");
+        Path.Combine(TempFolder.For(_settings, item), item.Id.ToString("N") + ".ytdlp");
 
     /// <summary>
     /// The page as read when probing (yt-dlp -J). The download loads it instead of reading the page
-    /// again, which on YouTube takes as long as the probe itself.
+    /// again, which on YouTube takes as long as the probe itself. It lives in the general temporary
+    /// folder: it is written before the user picks the destination, and it is small.
     /// </summary>
-    public string InfoPathFor(DownloadItem item) => Path.Combine(TempDirectoryFor(item), "info.json");
+    public string InfoPathFor(DownloadItem item) => Path.Combine(_settings.TempDirectory, item.Id.ToString("N") + ".ytdlp.info.json");
+
+    /// <summary>Deletes the item's temporary folder and saved page.</summary>
+    public void DeleteTempFiles(DownloadItem item)
+    {
+        TryDeleteDirectory(TempDirectoryFor(item));
+        TryDelete(InfoPathFor(item));
+        TempFolder.Release(item);
+    }
 
     // The format addresses in it expire: YouTube's after about six hours.
     private static readonly TimeSpan InfoLifetime = TimeSpan.FromHours(4);
@@ -385,11 +394,12 @@ public sealed class YtDlpDownloader
         item.Status = DownloadStatus.Connecting;
         // yt-dlp continues its .part files (plain files by byte range, HLS/DASH by fragment).
         item.ResumeSupported = true;
-        var dir = TempDirectoryFor(item);
-        var info = InfoPathFor(item);
         string? cookieFile = null;
         try
         {
+            TempFolder.Prepare(_settings, item);
+            var dir = TempDirectoryFor(item);
+            var info = InfoPathFor(item);
             var exe = YtDlpTool.Find(_settings) ?? throw new FileNotFoundException(NotFound);
             var ffmpeg = Ffmpeg.Find(_settings);
             Directory.CreateDirectory(dir);
@@ -472,7 +482,7 @@ public sealed class YtDlpDownloader
             if (output is null || !File.Exists(output))
                 throw new IOException("yt-dlp no generó ningún archivo.");
             Finish(item, output);
-            TryDeleteDirectory(dir);
+            DeleteTempFiles(item);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

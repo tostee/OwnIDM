@@ -42,7 +42,7 @@ public sealed class HlsDownloader : IDisposable
     private TimeSpan IoTimeout => TimeSpan.FromSeconds(Math.Max(5, _settings.TimeoutSeconds));
 
     public string TempPathFor(DownloadItem item) =>
-        Path.Combine(_settings.TempDirectory, item.Id.ToString("N") + ".hls.part");
+        Path.Combine(TempFolder.For(_settings, item), item.Id.ToString("N") + ".hls.part");
 
     public string AudioTempPathFor(DownloadItem item) => TempPathFor(item) + ".audio";
 
@@ -188,7 +188,7 @@ public sealed class HlsDownloader : IDisposable
             var tracks = new List<Track>();
             try
             {
-                Directory.CreateDirectory(_settings.TempDirectory);
+                TempFolder.Prepare(_settings, _item);
                 _context = new RequestContext(new Uri(_item.SourceUrl ?? _item.Url), _item.Referrer, _item.Cookies, _item.UserAgent);
                 var (video, audio) = await LoadPlaylistsAsync().ConfigureAwait(false);
                 foreach (var p in audio is null ? new[] { video } : new[] { video, audio })
@@ -294,6 +294,7 @@ public sealed class HlsDownloader : IDisposable
         private void OpenTracks(List<Track> tracks, int count)
         {
             bool fresh = _item.HlsSegmentCount != count;
+            TempFolder.Create(TempFolder.For(_settings, _item));
             foreach (var t in tracks)
                 t.File = new FileStream(t.Path, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read, BufferSize, useAsync: true);
 
@@ -494,6 +495,7 @@ public sealed class HlsDownloader : IDisposable
             }
 
             _item.FileName = Path.GetFileName(target);
+            TempFolder.Release(_item);
             _item.TotalSize = new FileInfo(target).Length;
             _item.Downloaded = _item.TotalSize;
             _item.Status = DownloadStatus.Completed;

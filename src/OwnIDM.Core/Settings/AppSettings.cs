@@ -40,6 +40,12 @@ public sealed class AppSettings
     public string TempDirectory { get; set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OwnIDM", "Temp");
 
+    /// <summary>
+    /// Keep each download's temporary files in a hidden folder inside its destination folder (same disk
+    /// as the final file) instead of <see cref="TempDirectory"/>, which is then only a fallback.
+    /// </summary>
+    public bool TempInDownloadFolder { get; set; } = true;
+
     public bool MonitorClipboard { get; set; } = true;
     public bool ShowProgressWindow { get; set; } = true;
     public bool ShowCompleteDialog { get; set; } = true;

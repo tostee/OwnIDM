@@ -44,7 +44,25 @@ public sealed class DownloadManager : IDisposable
         Tools = new ToolManager(Settings, Engine);
         Torrents = new TorrentDownloader(Settings);
         foreach (var item in store.LoadDownloads())
+        {
+            AdoptLegacyTempFiles(item);
             Items.Add(item);
+        }
+    }
+
+    /// <summary>
+    /// Downloads saved before temporary folders were pinned per item keep theirs in the general one:
+    /// point them there so they resume instead of starting over.
+    /// </summary>
+    private void AdoptLegacyTempFiles(DownloadItem item)
+    {
+        if (item.TempDirectory is not null || item.Status == DownloadStatus.Completed || item.Kind == DownloadKind.Torrent)
+            return;
+        var dir = Settings.TempDirectory;
+        var id = item.Id.ToString("N");
+        if (File.Exists(Path.Combine(dir, id + ".part")) || File.Exists(Path.Combine(dir, id + ".hls.part")) ||
+            Directory.Exists(Path.Combine(dir, id + ".ytdlp")))
+            item.TempDirectory = dir;
     }
 
     public ObservableCollection<DownloadItem> Items { get; } = new();
@@ -284,12 +302,13 @@ public sealed class DownloadManager : IDisposable
         }
         if (item.Kind == DownloadKind.YtDlp)
         {
-            YtDlpDownloader.TryDeleteDirectory(YtDlp.TempDirectoryFor(item));
+            YtDlp.DeleteTempFiles(item);
             return;
         }
         TryDelete(TempPathFor(item));
         if (item.IsStream)
             TryDelete(Hls.AudioTempPathFor(item));
+        TempFolder.Release(item);
     }
 
     /// <summary>Adds an item to (or takes it out of) the main queue.</summary>

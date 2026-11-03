@@ -35,7 +35,8 @@ public sealed record DownloadRecord(
     string? YtDlpQuality = null,
     string? YtDlpFormat = null,
     string? InfoHash = null,
-    List<TorrentFileRecord>? TorrentFiles = null)
+    List<TorrentFileRecord>? TorrentFiles = null,
+    string? TempDirectory = null)
 {
     public static DownloadRecord From(DownloadItem i)
     {
@@ -55,7 +56,8 @@ public sealed record DownloadRecord(
             i.InfoHash,
             i.Kind == DownloadKind.Torrent
                 ? i.SnapshotTorrentFiles().Select(f => new TorrentFileRecord(f.Path, f.Length, f.Selected, f.Downloaded, f.PreExisting, f.DiskPath)).ToList()
-                : null);
+                : null,
+            i.TempDirectory);
     }
 
     public DownloadItem ToItem()
@@ -89,6 +91,7 @@ public sealed record DownloadRecord(
             AddedAt = AddedAt,
             LastTryAt = LastTryAt,
             InQueue = InQueue,
+            TempDirectory = TempDirectory,
         };
         item.Segments.AddRange(Segments.Select(s => new Segment { Start = s.Start, End = s.End, Downloaded = s.Downloaded }));
         if (TorrentFiles is not null)

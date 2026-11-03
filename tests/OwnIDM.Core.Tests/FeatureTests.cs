@@ -117,6 +117,24 @@ public sealed class QueueManagerTests : IAsyncLifetime
         });
     }
 
+    [Fact]
+    public void Downloads_saved_before_per_item_temp_folders_resume_from_the_general_one()
+    {
+        var store = new Persistence(Path.Combine(_root, "data-legacy"));
+        var settings = new AppSettings { TempDirectory = Path.Combine(_root, "tmp-legacy") };
+        store.SaveSettings(settings);
+        var started = new DownloadItem { Url = "http://x/a.bin", FileName = "a.bin", SaveDirectory = Path.Combine(_root, "out"), Status = DownloadStatus.Paused };
+        var notStarted = new DownloadItem { Url = "http://x/b.bin", FileName = "b.bin", SaveDirectory = Path.Combine(_root, "out"), Status = DownloadStatus.Paused };
+        store.SaveDownloads([started, notStarted]);
+        Directory.CreateDirectory(settings.TempDirectory);
+        File.WriteAllText(Path.Combine(settings.TempDirectory, started.Id.ToString("N") + ".part"), "x");
+
+        using var manager = new DownloadManager(store);
+
+        Assert.Equal(settings.TempDirectory, manager.Items.Single(i => i.Id == started.Id).TempDirectory);
+        Assert.Null(manager.Items.Single(i => i.Id == notStarted.Id).TempDirectory);
+    }
+
     private DownloadManager NewManager()
     {
         var manager = new DownloadManager(new Persistence(Path.Combine(_root, "data", Guid.NewGuid().ToString("N"))));

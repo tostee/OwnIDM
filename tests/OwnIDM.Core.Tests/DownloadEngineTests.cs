@@ -124,9 +124,17 @@ public sealed class DownloadEngineTests : IAsyncLifetime
         Assert.InRange(item.Downloaded, 1, _server.Data.Length - 1);
         Assert.NotEmpty(item.SnapshotSegments());
 
-        // Simulate an app restart: the item comes back from its JSON record.
+        // The .part file sits in a hidden folder on the destination's disk, not in the general temp folder.
+        var tempDir = Path.Combine(_settings.DefaultDownloadDirectory, TempFolder.Name);
+        Assert.Equal(tempDir, item.TempDirectory);
+        Assert.True(File.Exists(Path.Combine(tempDir, item.Id.ToString("N") + ".part")));
+        Assert.True(new DirectoryInfo(tempDir).Attributes.HasFlag(FileAttributes.Hidden));
+        Assert.False(Directory.Exists(_settings.TempDirectory));
+
+        // Simulate an app restart, with the temp setting changed meanwhile: the item keeps its folder.
         var restored = DownloadRecord.From(item).ToItem();
         _settings.SpeedLimiterEnabled = false;
+        _settings.TempInDownloadFolder = false;
         int rangeRequestsBefore = _server.RangeRequests;
 
         await _engine.RunAsync(restored, CancellationToken.None);
@@ -134,6 +142,27 @@ public sealed class DownloadEngineTests : IAsyncLifetime
         Assert.Equal(DownloadStatus.Completed, restored.Status);
         Assert.Equal(_server.Data, await File.ReadAllBytesAsync(restored.FullPath));
         Assert.True(_server.RangeRequests > rangeRequestsBefore);
+        Assert.Null(restored.TempDirectory);
+        Assert.False(Directory.Exists(tempDir)); // removed once empty
+    }
+
+    [Fact]
+    public async Task General_temp_folder_is_used_when_chosen_or_when_the_destination_cannot_hold_it()
+    {
+        _settings.TempInDownloadFolder = false;
+        var item = NewItem("/tiny.bin");
+        await _engine.RunAsync(item, CancellationToken.None);
+        Assert.Equal(DownloadStatus.Completed, item.Status);
+        Assert.False(Directory.Exists(Path.Combine(_settings.DefaultDownloadDirectory, TempFolder.Name)));
+        Assert.Empty(Directory.GetFiles(_settings.TempDirectory));
+
+        // A destination where the folder cannot be created (here, under a file) falls back to the general one.
+        _settings.TempInDownloadFolder = true;
+        var blocker = Path.Combine(_root, "blocker");
+        await File.WriteAllTextAsync(blocker, "");
+        var unreachable = new DownloadItem { Url = item.Url, SaveDirectory = Path.Combine(blocker, "sub") };
+        Assert.Equal(_settings.TempDirectory, TempFolder.Prepare(_settings, unreachable));
+        Assert.Equal(_settings.TempDirectory, unreachable.TempDirectory);
     }
 
     [Fact]

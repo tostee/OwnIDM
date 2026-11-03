@@ -38,6 +38,7 @@ public partial class OptionsWindow : Wpf.Ui.Controls.FluentWindow
 
         DownloadDirBox.Text = s.DefaultDownloadDirectory;
         TempDirBox.Text = s.TempDirectory;
+        TempInDownloadFolderBox.IsChecked = s.TempInDownloadFolder;
         _categories = new ObservableCollection<Category>(s.Categories.Select(c =>
             new Category { Name = c.Name, Extensions = c.Extensions, Directory = c.Directory }));
         CategoriesGrid.ItemsSource = _categories;
@@ -123,6 +124,7 @@ public partial class OptionsWindow : Wpf.Ui.Controls.FluentWindow
         s.TimeoutSeconds = timeout;
         s.DefaultDownloadDirectory = DownloadDirBox.Text.Trim();
         s.TempDirectory = TempDirBox.Text.Trim();
+        s.TempInDownloadFolder = TempInDownloadFolderBox.IsChecked == true;
         s.SpeedLimiterEnabled = LimiterBox.IsChecked == true;
         s.SpeedLimitKBps = limit;
         s.BrowserIntegration = BrowserBox.IsChecked == true;

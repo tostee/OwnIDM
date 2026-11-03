@@ -106,6 +106,12 @@ public sealed class DownloadItem : INotifyPropertyChanged
     /// <summary>yt-dlp only: format ids picked for that quality when probing ("137+140"); null = let yt-dlp choose.</summary>
     public string? YtDlpFormat { get; set; }
 
+    /// <summary>
+    /// Folder holding this download's temporary files, fixed when it starts (see <c>TempFolder</c>);
+    /// null while it has none.
+    /// </summary>
+    public string? TempDirectory { get; set; }
+
     /// <summary>Torrent only: the info-hash (hex), which also names the saved .torrent metadata.</summary>
     public string? InfoHash { get; set; }
 

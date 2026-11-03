@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
+using OwnIDM.Core.Engine;
 using OwnIDM.Core.Hls;
 using OwnIDM.Core.Models;
 using OwnIDM.Core.Settings;
@@ -141,7 +142,8 @@ public sealed class FfmpegTests : IAsyncLifetime
         Assert.Contains("audio", streams);
         var duration = Run(ffprobe, "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", item.FullPath);
         Assert.InRange(double.Parse(duration, System.Globalization.CultureInfo.InvariantCulture), 3.9, 4.2);
-        Assert.Empty(Directory.GetFiles(settings.TempDirectory));
+        // The temporary files went next to the destination, and their folder with them.
+        Assert.False(Directory.Exists(Path.Combine(settings.DefaultDownloadDirectory, TempFolder.Name)));
     }
 
     [Fact]
@@ -214,6 +216,8 @@ public sealed class FfmpegTests : IAsyncLifetime
         Assert.Contains("video", streams);
         Assert.Contains("audio", streams);
         Assert.False(Directory.Exists(downloader.TempDirectoryFor(item)));
+        Assert.False(File.Exists(downloader.InfoPathFor(item)));
+        Assert.False(Directory.Exists(Path.Combine(settings.DefaultDownloadDirectory, TempFolder.Name)));
     }
 
     private static string Run(string exe, params string[] args)
