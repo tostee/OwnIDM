@@ -200,7 +200,10 @@ public sealed class FfmpegTests : IAsyncLifetime
         }
         Assert.True(item.Status == DownloadStatus.Paused, item.ErrorMessage);
         Assert.True(item.ResumeSupported);
-        Assert.True(item.TotalSize > item.Downloaded);
+        Assert.True(item.Downloaded > 0);
+        // The manifest gives yt-dlp no duration, so it cannot estimate the audio (it comes after the video):
+        // the size stays unknown rather than made up, and once known it is more than what arrived.
+        Assert.True(item.TotalSize <= 0 || item.TotalSize > item.Downloaded, $"{item.Downloaded} of {item.TotalSize}");
         Assert.NotEmpty(Directory.GetFileSystemEntries(downloader.TempDirectoryFor(item)));
 
         // Resume as after a restart: the reloaded item keeps its quality and formats and finds yt-dlp's .part files.
