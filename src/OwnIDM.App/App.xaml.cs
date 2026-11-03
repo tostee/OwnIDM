@@ -70,6 +70,8 @@ public partial class App : Application
         if (Manager.Settings.BrowserIntegration)
             BrowserIntegration.TryRegister(out _);
 
+        FixedSizeDialogs.Register();
+
         // Light or dark like Windows, always with OwnIDM's blue as the accent (not the Windows accent color).
         ApplicationThemeManager.Changed += (theme, _) => ApplyAccent(theme);
         ApplicationThemeManager.ApplySystemTheme();
