@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using MonoTorrent;
 using MonoTorrent.Client;
 using OwnIDM.Core.Engine;
@@ -196,6 +197,7 @@ public sealed class TorrentDownloader : IDisposable
                 manager = await engine.AddAsync(magnet, item.SaveDirectory, TorrentSettings()).ConfigureAwait(false);
             }
 
+            await SpreadTrackersAsync(manager).ConfigureAwait(false);
             await manager.StartAsync().ConfigureAwait(false);
             Started?.Invoke(manager);
             if (torrent is null)
@@ -210,6 +212,8 @@ public sealed class TorrentDownloader : IDisposable
 
             while (!Refresh(item, manager))
             {
+                if (manager.State == TorrentState.FetchingHashes)
+                    SkipV2Hashes(engine, manager);
                 if (manager.State == TorrentState.Error)
                     throw new IOException(manager.Error?.Exception?.Message ?? "El torrent se detuvo por un error.");
                 // Options (and the speed limiter) can change while torrents run.
@@ -270,6 +274,80 @@ public sealed class TorrentDownloader : IDisposable
             await Task.Delay(200, ct).ConfigureAwait(false);
         if (engine.Contains(hashes))
             throw new IOException("Este torrent ya se está descargando.");
+    }
+
+    /// <summary>
+    /// Magnet links (and many .torrent files) put every tracker in one tier, which is tried one tracker at a
+    /// time, each waiting out its timeout. One tier per tracker announces to all of them at once.
+    /// </summary>
+    private static async Task SpreadTrackersAsync(TorrentManager manager)
+    {
+        var trackers = manager.TrackerManager;
+        if (trackers.Private || trackers.Tiers.All(t => t.Trackers.Count <= 1))
+            return;
+        var uris = trackers.Tiers.SelectMany(t => t.Trackers).Select(t => t.Uri).Distinct().ToList();
+        try
+        {
+            foreach (var tracker in trackers.Tiers.Where(t => t.Trackers.Count > 1).SelectMany(t => t.Trackers).ToList())
+                await trackers.RemoveTrackerAsync(tracker).ConfigureAwait(false);
+            var kept = trackers.Tiers.SelectMany(t => t.Trackers).Select(t => t.Uri).ToHashSet();
+            foreach (var uri in uris.Where(u => !kept.Contains(u)))
+            {
+                try { await trackers.AddTrackerAsync(uri).ConfigureAwait(false); }
+                catch (NotSupportedException) { } // a scheme MonoTorrent has no tracker for (wss://...)
+            }
+        }
+        catch (InvalidOperationException) { } // private after all: keep the trackers as they are
+    }
+
+    /// <summary>
+    /// A hybrid (v1 + v2) torrent fetched from a magnet link lacks its v2 piece layers, and MonoTorrent 3.0.2
+    /// will not download a byte until peers send them, which many never do. Its v1 hashes already verify every
+    /// piece (without v2 layers MonoTorrent checks only those), so the torrent goes straight to downloading.
+    /// MonoTorrent offers no option for this: the switch goes through its internals, and if they ever change
+    /// it does nothing, leaving the engine to fetch the hashes as before.
+    /// </summary>
+    internal static void SkipV2Hashes(ClientEngine engine, TorrentManager manager)
+    {
+        if (manager.Torrent is not { InfoHashes: { V1: not null, V2: not null } } || !CanSkipV2Hashes)
+            return;
+        try
+        {
+            V2Skip.Loop!.Send(_ =>
+            {
+                if (manager.State != TorrentState.FetchingHashes || V2Skip.Pending!.GetValue(manager) is not BitField pending)
+                    return;
+                pending.SetAll(false);
+                V2Skip.Mode!.SetValue(manager, V2Skip.DownloadMode!.Invoke([manager, engine.DiskManager, engine.ConnectionManager, engine.Settings]));
+            }, null);
+        }
+        catch (Exception ex) when (ex is TargetInvocationException or MemberAccessException or ArgumentException or InvalidCastException)
+        {
+            // Left fetching the hashes, as MonoTorrent does on its own.
+        }
+    }
+
+    private static readonly (SynchronizationContext? Loop, PropertyInfo? Pending, PropertyInfo? Mode, ConstructorInfo? DownloadMode) V2Skip = FindV2SkipMembers();
+
+    /// <summary>Whether the MonoTorrent internals <see cref="SkipV2Hashes"/> relies on are there.</summary>
+    internal static bool CanSkipV2Hashes =>
+        V2Skip is { Loop: not null, Pending.PropertyType: var t, Mode: not null, DownloadMode: not null } && t == typeof(BitField);
+
+    private static (SynchronizationContext?, PropertyInfo?, PropertyInfo?, ConstructorInfo?) FindV2SkipMembers()
+    {
+        const BindingFlags Instance = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        try
+        {
+            var loop = typeof(ClientEngine).GetField("MainLoop", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null) as SynchronizationContext;
+            var mode = typeof(TorrentManager).GetProperty("Mode", Instance);
+            var downloadMode = typeof(TorrentManager).Assembly.GetType("MonoTorrent.Client.Modes.DownloadMode")?.GetConstructor(
+                [typeof(TorrentManager), typeof(DiskManager), typeof(ConnectionManager), typeof(EngineSettings)]);
+            return (loop, typeof(TorrentManager).GetProperty("PendingV2PieceHashes", Instance), mode?.SetMethod is null ? null : mode, downloadMode);
+        }
+        catch (Exception ex) when (ex is MemberAccessException or AmbiguousMatchException or TypeLoadException)
+        {
+            return default;
+        }
     }
 
     /// <summary>Fills the file list the first time and applies the user's choice of files.</summary>
@@ -404,6 +482,9 @@ public sealed class TorrentDownloader : IDisposable
                 ["ipv6"] = new IPEndPoint(IPAddress.IPv6Any, port),
             },
             DhtEndPoint = _settings.TorrentDht ? new IPEndPoint(IPAddress.Any, port) : null,
+            // Most peers a tracker hands out cannot be reached and each try waits out its timeout: with the
+            // default 8 attempts at a time, a swarm of hundreds gets one or two connections in a minute.
+            MaximumHalfOpenConnections = 50,
         }.ToSettings();
     }
 
@@ -415,7 +496,7 @@ public sealed class TorrentDownloader : IDisposable
             if (_engine is null)
             {
                 Directory.CreateDirectory(CacheDirectory);
-                _engine = new ClientEngine(EngineSettings());
+                _engine = new ClientEngine(EngineSettings(), Factories.Default.WithDhtCreator(() => new BootstrappedDhtEngine()));
             }
             return _engine;
         }

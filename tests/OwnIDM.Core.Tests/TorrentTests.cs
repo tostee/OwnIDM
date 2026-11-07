@@ -253,6 +253,56 @@ public sealed class TorrentDownloadTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Hybrid_torrent_without_v2_piece_layers_downloads_with_its_v1_hashes()
+    {
+        Assert.True(TorrentDownloader.CanSkipV2Hashes, "the MonoTorrent internals used to skip the v2 hashes have changed");
+
+        // The metadata a magnet link brings is the info dictionary alone: no v2 "piece layers". Neither side
+        // has them, so no peer can ever send them; only the v1 hashes can verify the pieces.
+        var seedDir = Path.Combine(_root, "hybrid-seed");
+        Directory.CreateDirectory(seedDir);
+        WriteRandom(Path.Combine(seedDir, "film.bin"), 2 * 1024 * 1024 + 77, seed: 4);
+        var dict = await new TorrentCreator(TorrentType.V1V2Hybrid) { PieceLength = 16 * 1024 }
+            .CreateAsync(new TorrentFileSource(Path.Combine(seedDir, "film.bin")));
+        Assert.True(dict.Remove("piece layers"));
+        var path = Path.Combine(_root, "hybrid.torrent");
+        await File.WriteAllBytesAsync(path, dict.Encode());
+        var torrent = await Torrent.LoadAsync(path);
+        Assert.NotNull(torrent.InfoHashes.V1);
+        Assert.NotNull(torrent.InfoHashes.V2);
+
+        int port = FreePort();
+        using var seeder = new ClientEngine(new EngineSettingsBuilder
+        {
+            CacheDirectory = Path.Combine(_root, "hybrid-seed-cache"),
+            AllowPortForwarding = false,
+            AllowLocalPeerDiscovery = false,
+            DhtEndPoint = null,
+            ListenEndPoints = new() { ["ipv4"] = new IPEndPoint(IPAddress.Loopback, port) },
+        }.ToSettings());
+        var seed = await seeder.AddAsync(torrent, seedDir);
+        await seed.StartAsync();
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (seed.State != TorrentState.Seeding && DateTime.UtcNow < deadline)
+        {
+            if (seed.State == TorrentState.FetchingHashes)
+                TorrentDownloader.SkipV2Hashes(seeder, seed);
+            await Task.Delay(100);
+        }
+        Assert.Equal(TorrentState.Seeding, seed.State);
+
+        using var downloader = NewDownloader();
+        downloader.Started += m => _ = m.AddPeerAsync(new PeerInfo(new Uri($"ipv4://127.0.0.1:{port}")));
+        var item = new DownloadItem { Kind = DownloadKind.Torrent, Url = path, SaveDirectory = DestDir };
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+        await downloader.RunAsync(item, cts.Token);
+        await seed.StopAsync();
+
+        Assert.True(item.Status == DownloadStatus.Completed, item.ErrorMessage);
+        AssertSameFile(Path.Combine(seedDir, "film.bin"), Path.Combine(DestDir, "film.bin"));
+    }
+
+    [Fact]
     public async Task Invalid_torrent_file_is_reported()
     {
         var bogus = Path.Combine(_root, "bogus.torrent");
@@ -286,5 +336,33 @@ public sealed class TorrentDownloadTests : IAsyncLifetime
         int port = ((IPEndPoint)listener.LocalEndpoint).Port;
         listener.Stop();
         return port;
+    }
+}
+
+public class BootstrappedDhtEngineTests
+{
+    private static byte[] Node(byte fill) => Enumerable.Repeat(fill, 26).ToArray();
+
+    [Fact]
+    public void Reads_the_node_cache_as_the_engine_saves_it()
+    {
+        // MonoTorrent saves a bencoded list of compact nodes...
+        var saved = new MonoTorrent.BEncoding.BEncodedList
+        {
+            new MonoTorrent.BEncoding.BEncodedString(Node(1)),
+            new MonoTorrent.BEncoding.BEncodedString(Node(2)),
+            new MonoTorrent.BEncoding.BEncodedString(new byte[5]), // not a node
+        }.Encode();
+        var nodes = BootstrappedDhtEngine.CachedNodes(saved).Select(n => n.ToArray()).ToList();
+        Assert.Equal([Node(1), Node(2)], nodes);
+    }
+
+    [Fact]
+    public void Reads_raw_compact_nodes_and_ignores_garbage()
+    {
+        Assert.Equal(2, BootstrappedDhtEngine.CachedNodes(Node(1).Concat(Node(2)).ToArray()).Count());
+        Assert.Empty(BootstrappedDhtEngine.CachedNodes(ReadOnlyMemory<byte>.Empty));
+        Assert.Empty(BootstrappedDhtEngine.CachedNodes("le"u8.ToArray()));
+        Assert.Empty(BootstrappedDhtEngine.CachedNodes(new byte[27]));
     }
 }
