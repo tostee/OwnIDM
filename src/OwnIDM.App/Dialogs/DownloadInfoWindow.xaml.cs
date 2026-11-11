@@ -46,11 +46,11 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
         {
             // A torrent is a file or a folder named by the torrent itself: only the destination folder is chosen.
             PathLabel.Text = "Guardar en";
-            SetPath(item.SaveDirectory);
+            SetPath(manager.Settings.SaveDirectoryFor(item.Category));
         }
         else
         {
-            SetPath(item.FullPath);
+            SetPath(Path.Combine(manager.Settings.SaveDirectoryFor(item.Category), item.FileName));
         }
         if (sizeHint > 0)
             InfoText.Text = "Tamaño: " + Format.Bytes(sizeHint.Value);
@@ -118,7 +118,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
                 _settingPath = true;
                 CategoryBox.SelectedItem = category;
                 _settingPath = false;
-                SetPath(Path.Combine(_manager.Settings.DirectoryFor(category), probe.FileName));
+                SetPath(Path.Combine(_manager.Settings.SaveDirectoryFor(category), probe.FileName));
             }
             InfoText.Text = $"Tamaño: {Format.Bytes(probe.TotalSize)}   ·   " +
                             (probe.ResumeSupported ? "Reanudable: sí (multi-conexión)" : "Reanudable: no (una sola conexión)");
@@ -190,7 +190,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
                 _settingPath = true;
                 CategoryBox.SelectedItem = category;
                 _settingPath = false;
-                SetPath(Path.Combine(_manager.Settings.DirectoryFor(category), name));
+                SetPath(Path.Combine(_manager.Settings.SaveDirectoryFor(category), name));
             }
             var duration = TimeSpan.FromSeconds(probe.Duration);
             bool hasFfmpeg = Ffmpeg.Find(_manager.Settings) is not null;
@@ -266,7 +266,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
         _settingPath = true;
         CategoryBox.SelectedItem = category;
         _settingPath = false;
-        SetPath(_manager.Settings.DirectoryFor(category));
+        SetPath(_manager.Settings.SaveDirectoryFor(category));
     }
 
     private void ShowTorrentInfo()
@@ -360,7 +360,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
         {
             var folder = new OpenFolderDialog
             {
-                InitialDirectory = Directory.Exists(PathBox.Text) ? PathBox.Text : _manager.Settings.DefaultDownloadDirectory,
+                InitialDirectory = Directory.Exists(PathBox.Text) ? PathBox.Text : _manager.Settings.SaveDirectoryFor(CategoryBox.SelectedItem as string ?? _item.Category),
             };
             if (folder.ShowDialog(this) == true)
             {
@@ -373,7 +373,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
         var dialog = new SaveFileDialog
         {
             FileName = Path.GetFileName(PathBox.Text),
-            InitialDirectory = Directory.Exists(dir) ? dir : _manager.Settings.DefaultDownloadDirectory,
+            InitialDirectory = Directory.Exists(dir) ? dir : _manager.Settings.SaveDirectoryFor(CategoryBox.SelectedItem as string ?? _item.Category),
             Filter = "Todos los archivos (*.*)|*.*",
             OverwritePrompt = false,
         };
@@ -409,6 +409,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
 
         _item.FileName = FileNameHelper.Sanitize(name);
         _item.SaveDirectory = dir;
+        RememberSaveDirectory(dir);
         _item.Category = CategoryBox.SelectedItem as string ?? _item.Category;
         _item.Description = string.IsNullOrWhiteSpace(DescriptionBox.Text) ? null : DescriptionBox.Text.Trim();
         if (QualityBox.SelectedItem is HlsVariant variant)
@@ -433,6 +434,15 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
         Close();
     }
 
+    /// <summary>The next download proposes this folder (see <see cref="Core.Settings.AppSettings.SaveDirectoryFor"/>).</summary>
+    private void RememberSaveDirectory(string dir)
+    {
+        if (string.Equals(_manager.Settings.LastSaveDirectory, dir, StringComparison.OrdinalIgnoreCase))
+            return;
+        _manager.Settings.LastSaveDirectory = dir;
+        _manager.SaveSettings();
+    }
+
     private void AcceptTorrent(bool startNow)
     {
         var dir = PathBox.Text.Trim();
@@ -450,6 +460,7 @@ public partial class DownloadInfoWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
         _item.SaveDirectory = dir;
+        RememberSaveDirectory(dir);
         _item.Category = CategoryBox.SelectedItem as string ?? _item.Category;
         _item.Description = string.IsNullOrWhiteSpace(DescriptionBox.Text) ? null : DescriptionBox.Text.Trim();
         if (_torrent is not null)

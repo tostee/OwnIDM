@@ -37,6 +37,9 @@ public sealed class AppSettings
     public string DefaultDownloadDirectory { get; set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
+    /// <summary>Folder where the user last saved a download; the "Guardar como" dialog proposes it first.</summary>
+    public string LastSaveDirectory { get; set; } = "";
+
     public string TempDirectory { get; set; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OwnIDM", "Temp");
 
@@ -116,6 +119,15 @@ public sealed class AppSettings
             ? DefaultDownloadDirectory
             : Path.Combine(DefaultDownloadDirectory, category);
     }
+
+    /// <summary>
+    /// Folder proposed when saving a new download: the last one used if it still exists
+    /// (e.g. not on a removed drive), otherwise the category's folder.
+    /// </summary>
+    public string SaveDirectoryFor(string category) =>
+        !string.IsNullOrWhiteSpace(LastSaveDirectory) && Directory.Exists(LastSaveDirectory)
+            ? LastSaveDirectory
+            : DirectoryFor(category);
 
     public bool IsMonitoredUrl(string url)
     {

@@ -507,3 +507,43 @@ internal sealed class SingleThreadContext : SynchronizationContext
         }
     }
 }
+
+public class SaveDirectoryTests
+{
+    [Fact]
+    public void Proposes_the_category_folder_until_a_folder_is_remembered()
+    {
+        var s = new AppSettings { DefaultDownloadDirectory = @"C:\Descargas" };
+
+        Assert.Equal(@"C:\Descargas\Vídeo", s.SaveDirectoryFor("Vídeo"));
+    }
+
+    [Fact]
+    public void Proposes_the_last_folder_used_for_any_category()
+    {
+        var last = Directory.CreateTempSubdirectory("ownidm-last-").FullName;
+        try
+        {
+            var s = new AppSettings { DefaultDownloadDirectory = @"C:\Descargas", LastSaveDirectory = last };
+
+            Assert.Equal(last, s.SaveDirectoryFor("Vídeo"));
+            Assert.Equal(last, s.SaveDirectoryFor(AppSettings.GeneralCategory));
+        }
+        finally
+        {
+            Directory.Delete(last);
+        }
+    }
+
+    [Fact]
+    public void Falls_back_to_the_category_folder_when_the_last_folder_is_gone()
+    {
+        var s = new AppSettings
+        {
+            DefaultDownloadDirectory = @"C:\Descargas",
+            LastSaveDirectory = Path.Combine(Path.GetTempPath(), "ownidm-missing-" + Guid.NewGuid()),
+        };
+
+        Assert.Equal(@"C:\Descargas\Música", s.SaveDirectoryFor("Música"));
+    }
+}

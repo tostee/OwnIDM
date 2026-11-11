@@ -16,7 +16,8 @@ Consulta la [política de firma de código](#code-signing-policy) y la [privacid
 - Reintentos con espera creciente, tiempo de espera configurable, redirecciones,
   cookies, referer y user-agent del navegador.
 - **Categorías** por extensión (Comprimidos, Documentos, Música, Programas, Vídeo)
-  con carpeta propia.
+  con carpeta propia. El diálogo «Guardar como» propone siempre la última carpeta donde guardaste
+  una descarga (si ya no existe, la de la categoría).
 - **Cola principal** con N descargas simultáneas, "Descargar más tarde".
 - **Limitador de velocidad** por descarga.
 - **Descarga por lotes** (`img*.jpg` → img001…img100) e importar/exportar listas de URL.
