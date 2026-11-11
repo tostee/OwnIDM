@@ -87,4 +87,11 @@ the app's own engine, checks its hash and that its signature matches the running
   the `es-ES` culture at startup. Code comments and identifiers are in English.
 - Antivirus heuristics matter for this app (it writes to the registry, watches the clipboard, downloads and runs tools):
   keep the version resource fields in `Directory.Build.props`, and don't bundle third-party tools in the installer.
-- `docs/ANALISIS-*.md`, `bugs/` and root `*.jpg` are local-only (gitignored). `docs/PLAN-ESCALADO.md` is the product roadmap.
+- `docs/ANALISIS-*.md`, `bugs/`, `tasks/` and root `*.jpg` are local-only (gitignored). `docs/PLAN-ESCALADO.md` is the product roadmap.
+
+## Task and bug log
+
+Every request from the user gets its own numbered folder `tasks/Task N` (next free number), and every bug they report
+gets `bugs/Bug N`. Each folder holds a `README.md` in Spanish following the template in `tasks/README.md`: what it is
+about, its impact, and a summary of what was done (files changed, how it was verified, what is pending). Create the
+folder when starting the work and update the summary when finishing. Screenshots for a bug go inside its folder.
