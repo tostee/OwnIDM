@@ -66,6 +66,7 @@ public partial class App : Application
         var feed = Assembly.GetEntryAssembly()?.GetCustomAttributes<AssemblyMetadataAttribute>()
                            .FirstOrDefault(a => a.Key == "UpdateFeed")?.Value;
         Updater = new AppUpdater(Manager.Settings, Manager.Engine, feed, Version);
+        var failedUpdateLog = Updater.TakeFailedInstallLog();
         Updater.Cleanup(); // the installer of an update already applied
         if (Manager.Settings.BrowserIntegration)
             BrowserIntegration.TryRegister(out _);
@@ -91,6 +92,28 @@ public partial class App : Application
 
         if (url is not null)
             _ = window.HandleIpc(new IpcMessage { Url = url });
+        if (failedUpdateLog is not null)
+            Dispatcher.BeginInvoke(() => ReportFailedUpdate(window, failedUpdateLog), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
+
+    /// <summary>The installer of an update failed and undid its changes; this is the old version, reopened by it.</summary>
+    private static void ReportFailedUpdate(Window owner, string log)
+    {
+        var text = "La actualización de OwnIDM no se pudo instalar y se deshicieron los cambios; sigues con la versión " +
+                   $"{Updater.CurrentVersion}.\n\nSuele deberse a un archivo de OwnIDM bloqueado (por el antivirus o por un " +
+                   "proceso que seguía abierto). Vuelve a intentarlo desde Ayuda > Buscar actualizaciones";
+        if (log.Length == 0)
+        {
+            MessageBox.Show(owner, text + ".", "Actualización de OwnIDM",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (MessageBox.Show(owner, text + $"; si vuelve a fallar, envía este registro:\n{log}\n\n¿Abrir la carpeta del registro?",
+                "Actualización de OwnIDM", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+        {
+            try { System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{log}\""); }
+            catch (System.ComponentModel.Win32Exception) { }
+        }
     }
 
     private static void ApplyAccent(ApplicationTheme theme) =>

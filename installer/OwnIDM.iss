@@ -43,6 +43,8 @@ WizardStyle=modern
 ShowLanguageDialog=no
 ; Closes a running OwnIDM (and its browser host) before replacing or removing its files.
 CloseApplications=force
+; Always writes %TEMP%\Setup Log <date> #NNN.txt: a silent update that fails is otherwise undiagnosable.
+SetupLogging=yes
 #ifdef SignTool
 SignTool={#SignTool}
 SignedUninstaller=yes
@@ -95,10 +97,42 @@ const
 
 var
   DownloadPage: TDownloadWizardPage;
+  InstallSucceeded: Boolean;
 
 function RelaunchRequested: Boolean;
 begin
   Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    InstallSucceeded := True;
+end;
+
+{ An update started from OwnIDM that failed (and was rolled back) would otherwise leave the user with
+  OwnIDM closed and no explanation. Leave the log path where OwnIDM looks at startup (AppUpdater) and
+  open the old version again. }
+procedure DeinitializeSetup;
+var
+  ResultCode: Integer;
+  AppExe: String;
+begin
+  if InstallSucceeded or not RelaunchRequested then
+    exit;
+  try
+    ForceDirectories(ExpandConstant('{localappdata}\OwnIDM\Update'));
+    SaveStringToFile(ExpandConstant('{localappdata}\OwnIDM\Update\failed.txt'), ExpandConstant('{log}'), False);
+  except
+    Log('No se pudo guardar el aviso de actualización fallida: ' + GetExceptionMessage);
+  end;
+  try
+    AppExe := ExpandConstant('{app}\OwnIDM.exe');
+    if FileExists(AppExe) then
+      Exec(AppExe, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
+  except
+    Log('No se pudo volver a abrir OwnIDM: ' + GetExceptionMessage);
+  end;
 end;
 
 function DotNetDesktop8Installed: Boolean;

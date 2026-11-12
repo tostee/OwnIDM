@@ -6,7 +6,7 @@
     executables without one look more suspicious.
   -->
   <PropertyGroup>
-    <Version>1.0.9</Version>
+    <Version>1.0.10</Version>
     <Product>OwnIDM</Product>
     <Company>OwnIDM</Company>
     <Authors>OwnIDM</Authors>

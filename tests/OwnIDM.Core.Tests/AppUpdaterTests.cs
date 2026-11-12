@@ -104,6 +104,27 @@ public sealed class AppUpdaterTests : IAsyncLifetime
     }
 
     [Fact]
+    public void A_failed_install_leaves_its_log_for_the_next_start()
+    {
+        using var updater = Updater("1.0.0");
+        Assert.Null(updater.TakeFailedInstallLog());
+
+        // What OwnIDM.iss writes when an update started with /RELAUNCH=1 is rolled back.
+        var setupLog = Path.Combine(_root, "Setup Log 2026-11-12 #001.txt");
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(setupLog, "Deshaciendo cambios");
+        Directory.CreateDirectory(updater.UpdateDirectory);
+        File.WriteAllText(Path.Combine(updater.UpdateDirectory, "failed.txt"), setupLog);
+
+        var copy = updater.TakeFailedInstallLog();
+        updater.Cleanup();
+
+        Assert.NotNull(copy);
+        Assert.Equal("Deshaciendo cambios", File.ReadAllText(copy));
+        Assert.Null(updater.TakeFailedInstallLog()); // reported once
+    }
+
+    [Fact]
     public async Task Rejects_an_installer_whose_sha256_does_not_match()
     {
         _publishedSha = Convert.ToHexString(SHA256.HashData([1, 2, 3]));

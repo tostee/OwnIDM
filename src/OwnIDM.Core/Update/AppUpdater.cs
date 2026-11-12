@@ -118,6 +118,33 @@ public sealed class AppUpdater : IDisposable
     /// <summary>Removes the installer of an update already applied; never throws.</summary>
     public void Cleanup() => TryDeleteDirectory(UpdateDirectory);
 
+    /// <summary>
+    /// When the last update failed and was rolled back, the installer leaves failed.txt in
+    /// <see cref="UpdateDirectory"/> with the path of its log (see OwnIDM.iss). Copies that log next to
+    /// the update folder (so <see cref="Cleanup"/> and %TEMP% cleaners keep it) and returns the copy;
+    /// null when there was no failure. Call it before <see cref="Cleanup"/>; never throws.
+    /// </summary>
+    public string? TakeFailedInstallLog()
+    {
+        var marker = Path.Combine(UpdateDirectory, "failed.txt");
+        try
+        {
+            if (!File.Exists(marker))
+                return null;
+            var log = File.ReadAllText(marker).Trim();
+            File.Delete(marker);
+            var copy = Path.Combine(Path.GetDirectoryName(UpdateDirectory)!, "update-error.log");
+            if (log.Length > 0 && File.Exists(log))
+            {
+                File.Copy(log, copy, overwrite: true);
+                return copy;
+            }
+            return "";
+        }
+        catch (IOException) { return ""; }
+        catch (UnauthorizedAccessException) { return ""; }
+    }
+
     /// <summary>1.2 and 1.2.0.0 are the same version: compare on major.minor.build.</summary>
     private static Version Normalize(Version v) => new(v.Major, v.Minor, Math.Max(0, v.Build));
 

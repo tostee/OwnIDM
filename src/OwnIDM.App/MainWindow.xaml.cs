@@ -609,8 +609,10 @@ public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
             return;
         try
         {
-            // /RELAUNCH=1 makes the installer open OwnIDM again when it finishes (see OwnIDM.iss).
-            Process.Start(new ProcessStartInfo(installer, "/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RELAUNCH=1")
+            // /RELAUNCH=1 makes the installer open OwnIDM again when it finishes, or after a failure (see OwnIDM.iss).
+            // No /SUPPRESSMSGBOXES: if a file can't be replaced the user must see why and be able to retry,
+            // instead of a silent rollback.
+            Process.Start(new ProcessStartInfo(installer, "/SILENT /NORESTART /CLOSEAPPLICATIONS /RELAUNCH=1")
             {
                 UseShellExecute = true,
             });
