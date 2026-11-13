@@ -95,13 +95,73 @@ const
   DotNetUrl = 'https://aka.ms/dotnet/8.0/windowsdesktop-runtime-win-x64.exe';
   DotNetFile = 'windowsdesktop-runtime-8-win-x64.exe';
 
+  UninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{6C1C3C7E-4F0B-4C7A-9C55-0D1D3B9E2A71}_is1';
+
 var
   DownloadPage: TDownloadWizardPage;
   InstallSucceeded: Boolean;
+  { This instance handed the work to an elevated copy of itself and must not report a failure. }
+  HandedToElevated: Boolean;
 
 function RelaunchRequested: Boolean;
 begin
   Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
+end;
+
+function CanWriteTo(Dir: String): Boolean;
+var
+  Probe: String;
+begin
+  Probe := AddBackslash(Dir) + 'ownidm-write-test.tmp';
+  Result := SaveStringToFile(Probe, '', False);
+  if Result then
+    DeleteFile(Probe);
+end;
+
+function QuoteParam(S: String): String;
+begin
+  if Pos(' ', S) > 0 then
+    Result := '"' + S + '"'
+  else
+    Result := S;
+end;
+
+{ Setup runs without administrator rights, but an earlier copy may have been installed elevated into a folder
+  such as C:\Program Files\OwnIDM. Replacing those files then fails with "Acceso denegado" and the update is
+  rolled back. In that case start this same installer again elevated (Windows asks for permission), on the same
+  folder and with the same parameters. }
+function InitializeSetup: Boolean;
+var
+  PrevDir, Params, P: String;
+  I, ResultCode: Integer;
+begin
+  Result := True;
+  if IsAdmin or (ExpandConstant('{param:ELEVATED|0}') = '1') then
+    exit;
+  if not RegQueryStringValue(HKCU, UninstallKey, 'Inno Setup: App Path', PrevDir) then
+    exit;
+  if not DirExists(PrevDir) or CanWriteTo(PrevDir) then
+    exit;
+
+  Log('No se puede escribir en ' + PrevDir + '; se vuelve a iniciar el instalador con permisos de administrador.');
+  Params := '';
+  for I := 1 to ParamCount do
+  begin
+    P := ParamStr(I);
+    if (CompareText(Copy(P, 1, 5), '/SL5=') <> 0) and (CompareText(Copy(P, 1, 5), '/DIR=') <> 0) then
+      Params := Params + QuoteParam(P) + ' ';
+  end;
+  Params := Params + '/DIR="' + PrevDir + '" /ELEVATED=1';
+
+  if ShellExec('runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW, ewNoWait, ResultCode) then
+    HandedToElevated := True
+  else
+  begin
+    Log('No se concedieron permisos de administrador (código ' + IntToStr(ResultCode) + ').');
+    SuppressibleMsgBox('OwnIDM está instalado en ' + PrevDir + ', una carpeta que necesita permisos de administrador.' + #13#10 +
+      'Vuelve a intentar la actualización y acepta el aviso de Windows.', mbError, MB_OK, IDOK);
+  end;
+  Result := False;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -118,7 +178,7 @@ var
   ResultCode: Integer;
   AppExe: String;
 begin
-  if InstallSucceeded or not RelaunchRequested then
+  if InstallSucceeded or HandedToElevated or not RelaunchRequested then
     exit;
   try
     ForceDirectories(ExpandConstant('{localappdata}\OwnIDM\Update'));
