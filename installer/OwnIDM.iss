@@ -102,6 +102,8 @@ var
   InstallSucceeded: Boolean;
   { This instance handed the work to an elevated copy of itself and must not report a failure. }
   HandedToElevated: Boolean;
+  // Set when the previous folder is not writable and this install goes to the per-user folder instead.
+  MovedFromDir: String;
 
 function RelaunchRequested: Boolean;
 begin
@@ -154,20 +156,50 @@ begin
   Params := Params + '/DIR="' + PrevDir + '" /ELEVATED=1';
 
   if ShellExec('runas', ExpandConstant('{srcexe}'), Params, '', SW_SHOW, ewNoWait, ResultCode) then
-    HandedToElevated := True
-  else
   begin
-    Log('No se concedieron permisos de administrador (código ' + IntToStr(ResultCode) + ').');
-    SuppressibleMsgBox('OwnIDM está instalado en ' + PrevDir + ', una carpeta que necesita permisos de administrador.' + #13#10 +
-      'Vuelve a intentar la actualización y acepta el aviso de Windows.', mbError, MB_OK, IDOK);
+    HandedToElevated := True;
+    Result := False;
+    exit;
   end;
-  Result := False;
+
+  { Windows may refuse elevation without asking (error 5: a standard account, or UAC set to deny), or the
+    user may decline it. Install per user instead, where no rights are needed; InitializeWizard points
+    the install folder there and CurStepChanged moves OwnIDM's registrations to the new copy. The old folder is left
+    behind: it can't be removed without administrator rights. }
+  Log('No se concedieron permisos de administrador (código ' + IntToStr(ResultCode) + '); se instala en ' +
+    ExpandConstant('{userpf}\OwnIDM') + '.');
+  MovedFromDir := PrevDir;
+end;
+
+procedure RepointValue(Key, Name: String);
+var
+  Value: String;
+begin
+  if RegQueryStringValue(HKCU, Key, Name, Value) and
+     (StringChangeEx(Value, AddBackslash(MovedFromDir), AddBackslash(ExpandConstant('{app}')), True) > 0) then
+    RegWriteStringValue(HKCU, Key, Name, Value);
+end;
+
+{ OwnIDM writes its own path into these at runtime; after a move they would keep opening the old copy. }
+procedure RepointRegistrations;
+begin
+  RepointValue('Software\Microsoft\Windows\CurrentVersion\Run', 'OwnIDM');
+  RepointValue('Software\Classes\OwnIDM.Torrent\DefaultIcon', '');
+  RepointValue('Software\Classes\OwnIDM.Torrent\shell\open\command', '');
+  RepointValue('Software\Classes\OwnIDM.Magnet\DefaultIcon', '');
+  RepointValue('Software\Classes\OwnIDM.Magnet\shell\open\command', '');
+  RepointValue('Software\Classes\magnet\DefaultIcon', '');
+  RepointValue('Software\Classes\magnet\shell\open\command', '');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
+  begin
     InstallSucceeded := True;
+    if MovedFromDir <> '' then
+      RepointRegistrations;
+  end;
 end;
 
 { An update started from OwnIDM that failed (and was rolled back) would otherwise leave the user with
@@ -187,7 +219,10 @@ begin
     Log('No se pudo guardar el aviso de actualización fallida: ' + GetExceptionMessage);
   end;
   try
-    AppExe := ExpandConstant('{app}\OwnIDM.exe');
+    if MovedFromDir <> '' then
+      AppExe := AddBackslash(MovedFromDir) + 'OwnIDM.exe'
+    else
+      AppExe := ExpandConstant('{app}\OwnIDM.exe');
     if FileExists(AppExe) then
       Exec(AppExe, '', '', SW_SHOWNORMAL, ewNoWait, ResultCode);
   except
@@ -206,6 +241,9 @@ end;
 
 procedure InitializeWizard;
 begin
+  // Also applies to silent installs: the app constant is read from DirEdit.
+  if MovedFromDir <> '' then
+    WizardForm.DirEdit.Text := ExpandConstant('{userpf}\OwnIDM');
   DownloadPage := CreateDownloadPage('Descargando .NET 8', 'OwnIDM necesita el entorno .NET 8 Desktop Runtime de Microsoft.', nil);
 end;
 
